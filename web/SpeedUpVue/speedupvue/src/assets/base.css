@@ -1,0 +1,135 @@
+/* color palette from <https://github.com/vuejs/theme> */
+:root {
+    --vt-c-white: #ffffff;
+    --vt-c-white-soft: #f8f8f8;
+    --vt-c-black: #181818;
+    --vt-c-black-soft: #222222;
+    --vt-c-black-mute: #282828;
+    /* blue theme start */
+    --y-c-mute: #0041d19c;
+    --y-c-mute-before: #2581ff9c;
+    --y-c-blue: rgb(0, 0, 139);
+    --y-c-blue-btn-back: rgb(0, 14, 167);
+    --y-c-blue-text-shadow: rgb(172, 229, 238);
+    --y-c-blue-box-shadow: rgb(0, 21, 255);
+    --y-c-blue-btn-text: rgb(28, 169, 201);
+    --y-c-blue-rad-grad: radial-gradient(ellipse farthest-side at center center, var(--y-c-blue-box-shadow) 0%, transparent 100%);
+    --y-c-blue-rad-grad-hover: radial-gradient(ellipse farthest-side at center center, var(--y-c-blue-shadow-light) 0%, var(--y-c-blue-btn-back) 100%);
+    --y-c-blue-rad-grad-disable: radial-gradient(ellipse farthest-side at center center, var(--y-c-mute) 0%, transparent 100%);
+    --y-c-blue-play-rad-grad: radial-gradient(ellipse farthest-side at center center, var(--y-c-blue-box-shadow) 0%, var(--y-c-blue) 100%);
+    --y-c-blue-play-rad-grad-hover: radial-gradient(ellipse farthest-side at center center, var(--y-c-blue-shadow-light) 0%, var(--y-c-blue) 100%);
+    /*--y-c-blue-light: rgb(28, 169, 201);*/
+    --y-c-blue-shadow-light: rgb(0, 140, 240);
+    /* blue theme end */
+    --vt-c-indigo: #2c3e50;
+    --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
+    --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
+    --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
+    --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
+    --vt-c-text-light-1: var(--vt-c-indigo);
+    --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
+    --vt-c-text-dark-1: var(--vt-c-white);
+    --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
+}
+
+/* semantic color variables for this project */
+:root {
+    --color-background: var(--y-c-blue);
+    --color-background-soft: var(--vt-c-white-soft);
+    --color-border: var(--vt-c-divider-light-2);
+    --color-border-hover: var(--vt-c-divider-light-1);
+    --color-heading: var(--vt-c-text-light-1);
+    --color-text: var(--vt-c-text-light-1);
+    --section-gap: 160px;
+    /* white theme start */
+    --color-background-mute: var(--y-c-mute);
+    --color-background-mute-before: var(--y-c-mute-before);
+    --color-back: var(--y-c-blue);
+    --color-btn-back: var(--y-c-blue-btn-back);
+    --color-box-shadow: var(--y-c-blue-box-shadow);
+    --color-btn-text: var(--y-c-blue-btn-text);
+    --color-radial-grad: var(--y-c-blue-rad-grad);
+    --color-radial-grad-hover: var(--y-c-blue-rad-grad-hover);
+    --color-radial-grad-disabled: var(--y-c-blue-rad-grad-disable);
+    --color-play-radial-grad: var(--y-c-blue-play-rad-grad);
+    --color-play-radial-grad-hover: var(--y-c-blue-play-rad-grad-hover);
+    /*--color-light: var(--y-c-blue-light);*/
+    --color-shadow-light: var(--y-c-blue-shadow-light);
+    --color-text-shadow: var(--y-c-blue-text-shadow);
+    /* white theme end */
+}
+
+/*@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: var(--vt-c-black);
+    --color-background-soft: var(--vt-c-black-soft);
+    --color-background-mute: var(--vt-c-black-mute);
+
+    --color-border: var(--vt-c-divider-dark-2);
+    --color-border-hover: var(--vt-c-divider-dark-1);
+
+    --color-heading: var(--vt-c-text-dark-1);
+    --color-text: var(--vt-c-text-dark-2);
+  }
+}*/
+
+[data-theme="dark"] {
+    --color-background: var(--vt-c-black);
+    --color-background-soft: var(--vt-c-black-soft);
+    --color-background-mute: var(--vt-c-black-mute);
+    --color-border: var(--vt-c-divider-dark-2);
+    --color-border-hover: var(--vt-c-divider-dark-1);
+    --color-heading: var(--vt-c-text-dark-1);
+    --color-text: var(--vt-c-text-dark-2);
+    /* dark theme start */
+    --color-back: var(--y-c-blue);
+    --color-btn-back: var(--y-c-blue-btn-back);
+    --color-box-shadow: var(--y-c-blue-box-shadow);
+    --color-btn-text: var(--y-c-blue-btn-text);
+    --color-radial-grad: var(--y-c-blue-rad-grad);
+    --color-radial-grad-hover: var(--y-c-blue-rad-grad-hover);
+    --color-play-radial-grad: var(--y-c-blue-play-rad-grad);
+    --color-play-radial-grad-hover: var(--y-c-blue-play-rad-grad-hover);
+    --color-radial-grad-disabled: var(--y-c-blue-rad-grad-disable);
+    /*--color-light: var(--y-c-blue-light);*/
+    --color-shadow-light: var(--y-c-blue-shadow-light);
+    --color-text-shadow: var(--y-c-blue-text-shadow);
+    /* dark theme end */
+}
+
+[data-theme="blue"] {
+    --color-background: var(--vt-c-black); /* #00008b */
+    --color-back: var(--y-c-blue); /* #0000ff */
+    --color-btn-back: var(--y-c-blue-btn-back); /* #000ea7 */
+    --color-box-shadow: var(--y-c-blue-box-shadow); /* #0015ff */
+    --color-btn-text: var(--y-c-blue-btn-text); /* 1ca9c9*/
+    --color-radial-grad: var(--y-c-blue-rad-grad); /* #0015ff #000ea7 */
+    --color-radial-grad-hover: var(--y-c-blue-rad-grad-hover); /* #008cf0 #000ea7 */
+    --color-play-radial-grad: var(--y-c-blue-play-rad-grad); /* #0015ff #00008b */
+    --color-play-radial-grad-hover: var(--y-c-blue-play-rad-grad-hover); /* #008cf0 #00008b */
+    --color-radial-grad-disabled: var(--y-c-blue-rad-grad-disable);
+    /*--color-light: var(--y-c-blue-light);*/ /* #0015ff */
+    --color-shadow-light: var(--y-c-blue-shadow-light); /* #008cf0 */
+    --color-text-shadow: var(--y-c-blue-text-shadow); /* #ace5ee */
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+body {
+    min-height: 100vh;
+    color: var(--color-text);
+    background: var(--color-background);
+    transition: color 0.5s, background-color 0.5s;
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    font-size: 14px;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    padding: 0;
+    margin: 0;
+}

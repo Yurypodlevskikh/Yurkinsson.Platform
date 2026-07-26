@@ -1,0 +1,19 @@
+# Auto detect text files and normalize line endings
+* text=auto
+
+# C# files
+*.cs text
+
+# JavaScript / TypeScript / Vue
+*.js text
+*.ts text
+*.vue text
+
+# JSON / YAML / Markdown
+*.json text
+*.yml text
+*.yaml text
+*.md text
+
+# Keep shell scripts LF
+*.sh text eol=lf
