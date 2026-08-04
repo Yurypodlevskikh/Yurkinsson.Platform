@@ -496,5 +496,4 @@ appsettings.Development.json
 appsettings.*.Local.json
 
 # SpeedUpVue
-/SpeedUpVue/src/assets/audio
-/speedupvue/public/audio
+/Notes.txt
