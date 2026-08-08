@@ -132,6 +132,10 @@ Rules:
 - MiniAPI is always the single entry point.
 - Communication between services is JSON-based.
 - Identity never returns HTML.
+- External clients must never communicate directly with YurkinssonAuthentication.
+- YurkinssonAuthentication is an internal service.
+- All external requests must go through the appropriate Backend-for-Frontend (BFF) service (for example, SpeedUpMiniAPI).
+- Identity must not contain any client-specific routing or UI logic.
 
 ---
 
@@ -341,24 +345,37 @@ When context is missing:
 
 # Copilot Working Rules
 
-When responding to implementation requests:
+For every implementation request:
 
-1. Analyse first.
+1. Analyse the existing implementation before proposing changes.
 
 2. Explain the current implementation.
 
-3. Identify affected projects.
+3. Identify the affected projects and source files.
 
-4. Reuse existing architecture.
+4. Reuse the existing architecture, services, DTOs and response contracts.
 
-5. Minimize code changes.
+5. Minimize code changes and preserve backward compatibility.
 
-6. Preserve backward compatibility.
+6. Do not modify unrelated files.
 
 7. Update affected unit tests when necessary.
 
 8. Explain why each change is required.
 
-9. If uncertain, ask for additional files before generating code.
+9. Explain how the implementation should be manually verified.
 
-Never redesign the project unless explicitly requested.
+10. If required context is missing, ask the user to open the relevant source files before generating code.
+
+Always:
+
+- preserve existing coding style
+- extend existing implementations instead of replacing them
+- avoid duplicate classes, DTOs, controllers and endpoints
+
+Never:
+
+- redesign the architecture unless explicitly requested
+- create files under Miscellaneous Files
+- generate replacement files when the originals are unavailable
+- skip the analysis step

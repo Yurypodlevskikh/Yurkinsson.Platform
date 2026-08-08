@@ -11,6 +11,7 @@ using BusinessLogic.Models;
 using DataAccess.Models;
 using DataAccess.Interfaces;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 
 namespace BusinessLogic.Services;
 
@@ -21,8 +22,9 @@ internal class IdentityApiService : IIdentityApiService
     private readonly string _baseUrl;
     private readonly IMapper _mapper;
     private readonly TokenCacheService _tokenCacheService;
+    private readonly IConfiguration _configuration;
 
-    public IdentityApiService(HttpClient httpClient, IOptions<IdentityApiSettings> settings, IMapper mapper, IUserInfoRepo repo, TokenCacheService tokenCacheService)
+    public IdentityApiService(HttpClient httpClient, IOptions<IdentityApiSettings> settings, IMapper mapper, IUserInfoRepo repo, TokenCacheService tokenCacheService, IConfiguration configuration)
     {
         _httpClient = httpClient;
         _repo = repo;
@@ -36,7 +38,9 @@ internal class IdentityApiService : IIdentityApiService
 
         _httpClient.BaseAddress = new Uri(_baseUrl);
         _tokenCacheService = tokenCacheService;
+        _configuration = configuration;
     }
+
     public async Task<HttpResponseMessage> RegisterAsync(RegisterUserProxyRequestDto model, CancellationToken cancellationToken = default)
     {
         var identityRequest = new HttpRequestMessage(HttpMethod.Post, "api/account/register")
@@ -46,6 +50,7 @@ internal class IdentityApiService : IIdentityApiService
         var response = await _httpClient.SendAsync(identityRequest, cancellationToken);
         return response;
     }
+
     public async Task<ResponseToUserDto> AuthenticateAsync(AuthenticateRequest model, CancellationToken cancellationToken = default)
     {
         HttpResponseMessage? response = await _httpClient.PostAsJsonAsync("api/account/login", model, cancellationToken);
@@ -117,7 +122,7 @@ internal class IdentityApiService : IIdentityApiService
 
         responseToUser.JwtToken = authenticateResponse.JwtToken;
         responseToUser.RefreshToken = authenticateResponse.RefreshToken;
-        responseToUser.HueDegrees = userInfoByGuid?.HueDegrees ?? 0; // or any default value
+        responseToUser.HueDegrees = userInfoByGuid?.HueDegrees ?? 0;
         responseToUser.Nickname = userInfoFromToken.NickName;
         responseToUser.Message = "Authentication successful";
         responseToUser.IsSuccess = true;
@@ -130,9 +135,6 @@ internal class IdentityApiService : IIdentityApiService
         var requestMessage = new HttpRequestMessage(HttpMethod.Post, "api/account/change-nickname");
         requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", changeNickname.AccessToken);
         requestMessage.Content = new StringContent($"\"{changeNickname.Nickname}\"", Encoding.UTF8, "application/json");
-        // requestMessage.Content = new FormUrlEncodedContent(new[]{
-        //     new KeyValuePair<string?, string?>("nickname", changeNickname.Nickname)
-        // });
 
         var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
 
@@ -142,8 +144,6 @@ internal class IdentityApiService : IIdentityApiService
 
         if (!response.IsSuccessStatusCode)
         {
-            // var error = await response.Content.ReadAsStringAsync(cancellationToken);
-            // throw new Exception($"Failed to change nickname: {error}");
             changeNicknameResponse.ResultMessage = "Failed to change nickname.";
             return changeNicknameResponse;
         }
@@ -152,7 +152,6 @@ internal class IdentityApiService : IIdentityApiService
 
         if (identityResponse == null)
         {
-            //throw new Exception("Failed to deserialize updated nickname");
             changeNicknameResponse.ResultMessage = "Failed to deserialize updated nickname.";
             return changeNicknameResponse;
         }
@@ -336,18 +335,25 @@ internal class IdentityApiService : IIdentityApiService
 
     public async Task<HttpResponseMessage> ForgotPasswordAsync(ForgotPasswordDto model, CancellationToken cancellationToken = default)
     {
-        if (!await _repo.AreThereAnyUsersByEmailAsync(model.Email!, cancellationToken))
+        // Build ClientUri from configuration (prefer client-specific redirect, else Frontend:BaseUrl)
+        string? clientBase = _configuration["ClientRedirectUrls:SpeedUpVue"];
+        if (string.IsNullOrWhiteSpace(clientBase))
         {
-            return new HttpResponseMessage(HttpStatusCode.BadRequest)
-            {
-                Content = new StringContent("An error occured during data validation.")
-            };
+            clientBase = _configuration["Frontend:BaseUrl"];
         }
+
+        if (string.IsNullOrWhiteSpace(clientBase))
+        {
+            throw new InvalidOperationException("No frontend base URL configured. Set 'Frontend:BaseUrl' or 'ClientRedirectUrls:SpeedUpVue' in configuration.");
+        }
+
+        clientBase = clientBase.TrimEnd('/');
+        var clientUri = $"{clientBase}/reset-password";
 
         var requestModel = new ForgotPasswordRequestDto
         {
             Email = model.Email,
-            ClientUri = "https://speedup.yurkinsson.com/reset-password"
+            ClientUri = clientUri
         };
 
         var forgotPasswordRequest = new HttpRequestMessage(HttpMethod.Post, "api/account/forgot-password")
@@ -361,14 +367,7 @@ internal class IdentityApiService : IIdentityApiService
 
     public async Task<HttpResponseMessage> ResetPasswordAsync(ResetPasswordRequestdDto model, CancellationToken cancellationToken)
     {
-        if (!await _repo.AreThereAnyUsersByEmailAsync(model.Email!, cancellationToken))
-        {
-            return new HttpResponseMessage(HttpStatusCode.BadRequest)
-            {
-                Content = new StringContent("An error occured during data validation.")
-            };
-        }
-
+        // Forward reset request to the Identity service; let Identity perform account validation and reset.
         return await _httpClient.PostAsJsonAsync("api/account/reset-password", model, cancellationToken);
     }
 
@@ -398,7 +397,6 @@ internal class IdentityApiService : IIdentityApiService
     {
         if (string.IsNullOrEmpty(accessToken))
         {
-            //throw new Exception("Access token is missing");
             return null;
         }
 
@@ -406,24 +404,19 @@ internal class IdentityApiService : IIdentityApiService
 
         if (!_tokenCacheService.TryGetTokenInfo(accessToken, out var tokenInfo))
         {
-            // Token is not in cache, which means the token is expired. Get data from database.
             var userDbInfo = await _repo.GetUserInfoByTokenAsync(accessToken, cancellationToken);
 
             if (userDbInfo == null)
             {
-                //throw new Exception("Failed to get user info");
                 return null;
             }
 
             if (userDbInfo.RefreshTokenExpiry < DateTime.UtcNow)
             {
-                //throw new Exception("User is not signed in");
                 return null;
             }
             else
             {
-                // User is logged out, but token needs to be refreshed
-                //Console.WriteLine("User is logged out, but token needs to be refreshed");
                 isAuthenticateDto.SignedIn = false;
                 isAuthenticateDto.RefreshToken = userDbInfo.RefreshToken;
             }
@@ -432,7 +425,6 @@ internal class IdentityApiService : IIdentityApiService
         {
             if (tokenInfo == null)
             {
-                //throw new Exception("Token information is missing");
                 Console.WriteLine("Token information is missing");
                 return null;
             }
@@ -473,19 +465,17 @@ internal class IdentityApiService : IIdentityApiService
         var email = jwtSecurityToken.Claims.FirstOrDefault(claim => claim.Type == "email")?.Value;
         var audience = jwtSecurityToken.Claims.FirstOrDefault(claim => claim.Type == "aud")?.Value;
 
-        // Validate required claims
-    if (guidId == null || nickname == null || email == null || audience == null)
-        throw new Exception("Failed to decode token: one or more required claims are missing");
+        if (guidId == null || nickname == null || email == null || audience == null)
+            throw new Exception("Failed to decode token: one or more required claims are missing");
 
-    // Construct user info DTO
-    var userInfo = new UserInfoFromTokenDto
-    {
-        GuidId = guidId,
-        NickName = nickname,
-        Email = email,
-        TokenExpiry = jwtSecurityToken.ValidTo,
-        Audience = audience
-    };
+        var userInfo = new UserInfoFromTokenDto
+        {
+            GuidId = guidId,
+            NickName = nickname,
+            Email = email,
+            TokenExpiry = jwtSecurityToken.ValidTo,
+            Audience = audience
+        };
         return userInfo;
     }
 

@@ -28,13 +28,7 @@ builder.Host.UseSerilog();
 // Setting up a security protocol. Allow support to TLS 1.2
 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
-// Add appsettings.json, environment variables
-builder.Configuration
-    .SetBasePath(Directory.GetCurrentDirectory()) // Specifies the root directory
-    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-    .AddEnvironmentVariables();
-
-//// Databases configuration
+// Databases configuration
 var connectionString = builder.Configuration.GetConnectionString("MariaDbIdentity");
 
 builder.Services.AddDbContext<AppDbContext>(options =>

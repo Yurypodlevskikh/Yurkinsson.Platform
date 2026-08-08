@@ -16,10 +16,6 @@ async function handleEmailConfirmationFromUrl() {
         const userId = params.get('userId')
         const token = params.get('token')
 
-        console.log('URL params:', window.location.search)
-        console.log('userId:', userId)
-        console.log('token:', token)
-
         if (userId && token /* optional: && client === 'SpeedUpVue' */) {
             // Open auth tab so user sees result
             store.commit('openSettingsPanelWithTab', 'auth')

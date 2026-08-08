@@ -269,7 +269,7 @@ namespace YurkinssonAuthentication.Services
             tokenForUserResult.RefreshToken = this.GenerateRefreshTokenString();
 
             
-
+            
             identityUser.RefreshToken = tokenForUserResult.RefreshToken;
             identityUser.RefreshTokenExpiry = refreshTokenExpiry;
             await _userManager.UpdateAsync(identityUser);
@@ -347,9 +347,16 @@ namespace YurkinssonAuthentication.Services
             if (user == null) { return false; }
 
             var emailToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-            //var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(emailToken));
 
-            var resetLink = $"{forgotPassword.ClientUri!}?token={emailToken}&email={user.Email}";
+            // Encode the password reset token using the same Base64 URL encoding used for email confirmation,
+            // then URL-escape it for safe inclusion in query string.
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(emailToken));
+            var safeToken = Uri.EscapeDataString(encodedToken);
+
+            var safeClientUri = forgotPassword.ClientUri!.TrimEnd('/');
+            var safeEmail = Uri.EscapeDataString(user.Email!);
+
+            var resetLink = $"{safeClientUri}?token={safeToken}&email={safeEmail}";
 
             var subject = "Reset password";
             var htmlMessage = $@"<p>Please reset your password by clicking the link below.</p>
@@ -435,7 +442,23 @@ namespace YurkinssonAuthentication.Services
                 return IdentityResult.Failed(error);
             }
 
-            return await _userManager.ResetPasswordAsync(user, resetPassword.Token!, resetPassword.Password!);
+            // Try to decode token that was Base64Url-encoded and URL-escaped when sent in email.
+            // If decoding fails, fall back to the original token for backward compatibility.
+            string tokenToUse = resetPassword.Token!;
+            try
+            {
+                // First, unescape any URL-escaping (in case callers pass the escaped token)
+                var unescaped = Uri.UnescapeDataString(tokenToUse);
+                var decodedBytes = WebEncoders.Base64UrlDecode(unescaped);
+                var decodedString = Encoding.UTF8.GetString(decodedBytes);
+                tokenToUse = decodedString;
+            }
+            catch
+            {
+                // If decoding fails, assume token was sent in raw form and proceed.
+            }
+
+            return await _userManager.ResetPasswordAsync(user, tokenToUse, resetPassword.Password!);
         }
 
         public async Task<AppUser> GetUserByIdAsync(string userId, CancellationToken cancellationToken)
@@ -449,14 +472,14 @@ namespace YurkinssonAuthentication.Services
             return userInfo;
         }
 
-        public async Task<IdentityResult> UpdateUserAsync(AppUser user, CancellationToken cancellationToken)
+        public async Task<IdentityResult> UpdateUserAsync(AppUser user, CancellationToken cancellationToken = default)
         {
             var result = await _userManager.UpdateAsync(user);
 
             return result;
         }
 
-        public async Task<IdentityResult> DeleteUserAsync(AppUser user, CancellationToken cancellationToken)
+        public async Task<IdentityResult> DeleteUserAsync(AppUser user, CancellationToken cancellationToken = default)
         {
             return await _userManager.DeleteAsync(user);
         }
