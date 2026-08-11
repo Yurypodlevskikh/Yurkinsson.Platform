@@ -348,19 +348,34 @@ namespace YurkinssonAuthentication.Services
 
             var emailToken = await _userManager.GeneratePasswordResetTokenAsync(user);
 
-            // Encode the password reset token using the same Base64 URL encoding used for email confirmation,
-            // then URL-escape it for safe inclusion in query string.
+            // Encode the password reset token using Base64 URL-safe encoding and then URL-escape it for query string
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(emailToken));
             var safeToken = Uri.EscapeDataString(encodedToken);
 
-            var safeClientUri = forgotPassword.ClientUri!.TrimEnd('/');
+            // Resolve frontend base URL using the same configuration pattern as for email confirmation:
+            // 1. Prefer a client-specific redirect at ClientRedirectUrls:SpeedUpVue
+            // 2. Fallback to Frontend:BaseUrl
+            string? clientBase = _config["ClientRedirectUrls:SpeedUpVue"];
+            if (string.IsNullOrWhiteSpace(clientBase))
+            {
+                clientBase = _config["Frontend:BaseUrl"];
+            }
+
+            if (string.IsNullOrWhiteSpace(clientBase))
+            {
+                throw new InvalidOperationException("No frontend base URL configured. Set 'Frontend:BaseUrl' or 'ClientRedirectUrls:SpeedUpVue' in configuration.");
+            }
+
+            clientBase = clientBase.TrimEnd('/');
+
             var safeEmail = Uri.EscapeDataString(user.Email!);
 
-            var resetLink = $"{safeClientUri}?token={safeToken}&email={safeEmail}";
+            // Build reset link that matches SPA route: /reset-password?token=...&email=...
+            var resetLink = $"{clientBase}/reset-password?token={safeToken}&email={safeEmail}";
 
             var subject = "Reset password";
             var htmlMessage = $@"<p>Please reset your password by clicking the link below.</p>
-                                <p><a href='{resetLink}'>Reset password</a></p>";
+                        <p><a href='{resetLink}'>Reset password</a></p>";
 
             await _emailSender.SendEmailAsync(user.Email!, subject, htmlMessage);
 

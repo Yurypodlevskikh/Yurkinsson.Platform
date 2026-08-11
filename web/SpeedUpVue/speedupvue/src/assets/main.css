@@ -1,4 +1,31 @@
 @import './base.css';
+@import "./variables.css";
+
+/* Ensure status-message is available globally for reuse */
+.status-message {
+    background-color: var(--status-bg);
+    color: var(--status-color);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+/* Small normalization for form groups used across account components */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    width: 100%;
+}
+
+/* Small normalization for form groups used across account components */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    width: 100%;
+}
 
 #app {
   display: flex;
@@ -28,7 +55,57 @@ a,
   }
 }
 
+/* Shared animation used by icons across account components */
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
 /* INPUTS */
+.account-form {
+    padding: .5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+/* Shared form-actions used by AccountForm, ResetPasswordForm and inline forgot view */
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    /*gap: 0.5rem;*/
+    justify-content: space-between;
+    width: 100%;
+}
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+    width: 100%;
+}
+/* Ensure inputs inside shared form-group take full width */
+.form-group input {
+    width: 100%;
+}
+/* Shared footer buttons layout */
+.account-btn-footer {
+    align-items: center;
+    background-color: var(--color-btn-back);
+    border: none;
+    border-radius: 14px;
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+}
 input[type=range] {
     -webkit-appearance: none;
     background-color: transparent;

@@ -149,40 +149,5 @@
 </script>
 
 <style scoped>
-    .account-form {
-        padding: .5rem;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: .8rem;
-        width: 100%;
-    }
-
-        .form-group input {
-            width: 100%;
-        }
-
-    .form-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        justify-content: space-between;
-        width: 100%;
-    }
-
-    .account-btn-footer {
-        align-items: center;
-        background-color: var(--color-btn-back);
-        border: none;
-        border-radius: 14px;
-        display: flex;
-        justify-content: space-around;
-        text-align: center;
-    }
+    
 </style>

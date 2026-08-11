@@ -82,7 +82,10 @@ const store = createStore({
         refreshToken: localStorage.getItem('refreshToken') || null,
         isServiceTargetAreDifference: false,
         isReverse: false,
-        isReverseBack: false
+        isReverseBack: false,
+
+        // Add pendingReset to hold { email, token } while user is on reset page/modal
+        pendingReset: null
     },
     mutations: {
         setActiveSettingsTab(state, tabName) {
@@ -373,7 +376,15 @@ const store = createStore({
         },
         notPlaying(state) {
             state.isPlaying = false;
-        }
+        },
+        // New mutations for reset flow
+        setPendingReset(state, payload) {
+            // payload: { email: string, token: string }
+            state.pendingReset = payload;
+        },
+        clearPendingReset(state) {
+            state.pendingReset = null;
+        },
     },
     actions: {
         setDefaultSettings({ state, commit, dispatch }) {

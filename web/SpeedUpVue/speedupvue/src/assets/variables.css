@@ -1,0 +1,8 @@
+:root {
+    /* Preserve existing rgba-based tokens for future metronome color customization */
+    --panel-bg: rgba(255,255,255,0.02);
+    --status-bg: rgba(209, 231, 221, 0.9);
+    --status-color: rgba(15, 81, 50, 1);
+    --btn-back: rgba(255,255,255,0.06);
+    --btn-text: #ffffff;
+}

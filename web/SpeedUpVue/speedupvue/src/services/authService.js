@@ -117,3 +117,48 @@ export async function logoutUser() {
 export function openAuthTab() {
     store.commit('openSettingsPanelWithTab', 'auth')
 }
+
+/*
+ * New: forgotPassword
+ * - POSTs to BFF /api/forgot-password (body: { email })
+ * - BFF will construct ClientUri and forward to Identity
+ */
+export async function forgotPassword(email) {
+    try {
+        const response = await httpClient.post('api/forgot-password', { email })
+        // identity endpoints return a simple message string on success
+        return {
+            success: response.status >= 200 && response.status < 300,
+            message: response.data || 'If an account exists for this email, a reset link was sent.'
+        }
+    } catch (err) {
+        if (import.meta.env.DEV) console.error('Forgot password error:', err)
+        if (err.response && err.response.data) {
+            // return safe message from backend if available
+            return { success: false, message: err.response.data || 'Failed to request password reset.' }
+        }
+        return { success: false, message: 'Unable to request password reset. Try again later.' }
+    }
+}
+
+/*
+ * New: resetPassword
+ * - POSTs to BFF /api/reset-password (body: { email, token, password })
+ * - BFF forwards to Identity which validates token & sets password.
+ */
+export async function resetPassword(model) {
+    // model should be { email, token, password }
+    try {
+        const response = await httpClient.post('api/reset-password', model)
+        return {
+            success: response.status >= 200 && response.status < 300,
+            message: response.data || 'Password has been reset.'
+        }
+    } catch (err) {
+        if (import.meta.env.DEV) console.error('Reset password error:', err)
+        if (err.response && err.response.data) {
+            return { success: false, message: err.response.data || 'Failed to reset password.' }
+        }
+        return { success: false, message: 'Unable to reset password. Try again later.' }
+    }
+}
