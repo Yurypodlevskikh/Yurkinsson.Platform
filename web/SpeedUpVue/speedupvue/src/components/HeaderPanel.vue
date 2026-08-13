@@ -4,10 +4,10 @@
             <button type="button" @click="handleLogoClick()" title="Themes" class="bpm-btn logo-btn">
                 <LogoIcon />
             </button>
-            <SpeedUpButton @click="isAuthenticated ? handleLogout() : openAuthTab()"
-                           :title="isAuthenticated ? 'Logout' : 'Login'">
+            <SpeedUpButton @click="isAuthenticated ? openPresetsTab() : openAuthTab()"
+                           :title="isAuthenticated ? 'Account' : 'Login'">
                 <template #icon>
-                    <component :is="isAuthenticated ? IconLogout : IconLogin" />
+                    <component :is="isAuthenticated ? IconCircleUser : IconLogin" />
                 </template>
             </SpeedUpButton>
             <SpeedUpButton @click="openSettingsTab" title="Settings">
@@ -27,8 +27,7 @@
     import GearIcon from './icons/IconGear.vue'
     import LogoIcon from './icons/IconLogo.vue'
     import IconLogin from './icons/IconLogin.vue'
-    import IconLogout from './icons/IconLogout.vue'
-    import { logoutUser } from '@/services/authService'
+    import IconCircleUser from './icons/IconCircleUser.vue'
     import { useStatusMessage } from '@/services/useStatusMessage'
 
     const store = useStore()
@@ -57,21 +56,6 @@
 
     function toggleSettingsPanel() {
         store.commit('toggleSettingsPanel')
-    }
-
-    async function handleLogout() {
-        const result = await logoutUser()
-
-        if (result.success) {
-            // Delete Token
-            store.commit('setToken', null)
-            // Close settings panel
-            if (isOpenSettingsPanel.value) {
-                toggleSettingsPanel()
-            }
-        } else {
-            showStatusMessage(result.message)
-        }
     }
 </script>
 <style scoped>

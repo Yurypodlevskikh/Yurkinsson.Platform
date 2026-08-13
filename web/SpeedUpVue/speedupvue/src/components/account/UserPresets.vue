@@ -1,5 +1,12 @@
 ﻿<template>
-    <h2>{{ nickname }}'s Presets</h2>
+    <div class="presets-header">
+        <h2>{{ nickname }}'s Presets</h2>
+        <SpeedUpButton @click="onLogout" title="Logout" class="logout-btn">
+            <template #icon>
+                <IconLogout />
+            </template>
+        </SpeedUpButton>
+    </div>
     <table class="table">
         <thead>
             <tr>
@@ -52,6 +59,9 @@
     import SpeedUpButton from '@/components/ButtonSpeedUp.vue'
     import IconReadMe from '@/components/icons/IconReadMe.vue';
     import IconTrash from '@/components/icons/IconTrash.vue';
+    import IconLogout from '@/components/icons/IconLogout.vue';
+    import { logoutUser } from '@/services/authService'
+    import mockPresets from '@/data/mockPresets.js';
 
     const store = useStore()
     const { showStatusMessage } = useStatusMessage()
@@ -66,16 +76,17 @@
             presets.value = JSON.parse(cachedPresets)
             if (cachedPresets.length > 0) isVisible.value = true
             if (import.meta.env.DEV) {
-                console.log("Cached presets is sown")
+                console.log("Cached presets is shown")
             }
-        }else {
+        } else {
             try {
                 const data = await metronomeSettingsService.getUserPresets()
 
-                if (!Array.isArray(data)) {
-                    if (import.meta.env.DEV) {
-                        console.error('Invalid data format received for presets:', data);
-                    }
+                if (!Array.isArray(data) || data.length === 0) {
+                    // No server data — use mock presets for the UI prototype
+                    presets.value = mockPresets
+                    // Do not persist mock data to localStorage — keep it replaceable by API later
+                    isVisible.value = presets.value.length > 0
                     return;
                 }
 
@@ -85,6 +96,9 @@
                 if (import.meta.env.DEV) {
                     console.error('Error fetching presets: ', error)
                 }
+                // On error fallback to mock presets so the UI prototype remains usable
+                presets.value = mockPresets
+                isVisible.value = presets.value.length > 0
             }
         }
     }
@@ -95,11 +109,12 @@
 
     // methods
     const showDescription = (description) => {
-        //alert(description || 'No description provided.');
+        // Reuse existing status UI to show the description unobtrusively
         showStatusMessage(description || 'No description provided.')
     }
 
     const loadPreset = async (id) => {
+        // Wire to store action for future implementation; currently keeps UI ready
         const success = await store.dispatch('loadPresetById', id)
         if (!success) {
             showStatusMessage('Failed to load preset. Please try again later.', 'error')
@@ -139,9 +154,41 @@
     //// Computed token value from Vuex store
     //const token = computed(() => store.getters.getToken)
     const nickname = computed(() => store.getters.getNickname)
+
+    // Logout handler exposed in the user panel
+    const onLogout = async () => {
+        try {
+            const result = await logoutUser()
+            if (result.success) {
+                showStatusMessage(result.message || 'Logged out successfully.', 'success')
+            } else {
+                showStatusMessage(result.message || 'Logout failed.', 'error')
+            }
+        } catch (err) {
+            if (import.meta.env.DEV) console.error('Logout error:', err)
+            showStatusMessage('Unexpected error during logout.', 'error')
+        }
+    }
 </script>
 
 <style scoped>
+    .presets-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .presets-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+    .logout-btn {
+        /* reuse ButtonSpeedUp styling; minimal alignment tweak */
+        display: inline-flex;
+        align-items: center;
+    }
+
     .table{
         width: 100%;
         border-collapse: collapse;
