@@ -243,7 +243,8 @@ namespace YurkinssonAuthentication.Controllers
 
             //var audServisOrigin = _audienceService.ExtractAudiecneFromOrigin(HttpContext.Request);
             //if (string.IsNullOrEmpty(audServisOrigin) || audServisOrigin == "fake-audience")
-            //    return BadRequest(new {message = "Entry is not permitted."}); 
+            //    return BadRequest(new {message = "Entry is not permitted."});
+            Console.WriteLine($"Login Audience: {loginDto.Audience}");
 
             var result = await _accountService.LoginUser(loginDto);
             if (result.SignedIn.Succeeded)
@@ -346,6 +347,14 @@ namespace YurkinssonAuthentication.Controllers
         public async Task<IActionResult> RefreshToken([FromForm] RefreshTokenRequest refreshTokenRequest)
         {
             var jwtToken = Request.Headers.Authorization.ToString()?.Replace("Bearer ", string.Empty);
+
+            Console.WriteLine("=== REFRESH REQUEST ===");
+            Console.WriteLine($"JWT present: {!string.IsNullOrEmpty(jwtToken)}");
+            Console.WriteLine(
+                $"Refresh token present: " +
+                $"{!string.IsNullOrEmpty(refreshTokenRequest.RefreshToken)}");
+            Console.WriteLine("=======================");
+
             if (string.IsNullOrEmpty(jwtToken))
             {
                 // JWT token is missing in the Authorization header
@@ -363,6 +372,11 @@ namespace YurkinssonAuthentication.Controllers
                 JwtToken = jwtToken,
                 RefreshToken = refreshTokenRequest.RefreshToken
             };
+
+            Console.WriteLine("=== REFRESH TOKEN REQUEST ===");
+            Console.WriteLine($"JWT present: {!string.IsNullOrEmpty(jwtToken)}");
+            Console.WriteLine($"Refresh token present: {!string.IsNullOrEmpty(refreshTokenRequest.RefreshToken)}");
+            Console.WriteLine("=============================");
 
             var loginResult = await _accountService.RefreshToken(refreshTokenModel);
             if (loginResult.SignedIn.Succeeded)
@@ -426,6 +440,8 @@ namespace YurkinssonAuthentication.Controllers
         [Authorize]
         public async Task<IActionResult> Logout(CancellationToken cancellationToken)
         {
+            Console.WriteLine("=== Logout controller reached ===");
+
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {

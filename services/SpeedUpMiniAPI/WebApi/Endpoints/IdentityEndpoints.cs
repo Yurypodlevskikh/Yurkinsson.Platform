@@ -145,20 +145,22 @@ public static class IdentityEndpoints
             try
             {
                 var accessToken = httpContext.GetAccessToken();
+
                 if (string.IsNullOrEmpty(accessToken))
                 {
                     return Results.BadRequest("Access token is missing");
                 }
-                
+
                 var loggedOutResult = await identityApiService.LogoutAsync(accessToken);
-                        if (loggedOutResult.IsSuccessStatusCode)
-                        {
-                            return Results.Ok("You have been logged out");
-                        }
-                        else
-                        {
-                            return Results.BadRequest("Failed to logout");
-                        }
+
+                if (loggedOutResult.IsSuccessStatusCode)
+                {
+                    return Results.Ok("You have been logged out");
+                }
+                else
+                {
+                    return Results.BadRequest("Failed to logout");
+                }
             }
             catch (Exception ex)
             {

@@ -18,9 +18,6 @@ import ThemeSwitcher from './components/ThemeSwitcher.vue'
             this.$store.commit('updateIntervalTime');
 
             if (!this.$store.getters.isAuthenticated){
-                if (import.meta.env.DEV) {
-                    console.log('No token - user is not authorized.')
-                }
                 return
             }
 

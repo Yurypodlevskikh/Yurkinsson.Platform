@@ -284,21 +284,28 @@ internal class IdentityApiService : IIdentityApiService
         var requestMessage = new HttpRequestMessage(HttpMethod.Post, "api/account/logout");
         requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", jwtToken);
 
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(jwtToken);
+
         var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
         if (response.IsSuccessStatusCode)
         {
             var userInfo = await _repo.GetUserInfoByTokenAsync(jwtToken, cancellationToken);
 
-            if (userInfo == null)
+            if (userInfo != null)
             {
-                throw new Exception("Failed to get user info");
+                userInfo.JwtToken = string.Empty;
+                userInfo.RefreshToken = string.Empty;
+                userInfo.RefreshTokenExpiry = DateTime.MinValue;
+
+                await _repo.UpdateUserInfoAsync(userInfo, cancellationToken);
+            }
+            else
+            {
+                // Local user info not found for this token — proceed without failing.
+                // This can happen if the MiniAPI never created the local record or the token was rotated.
+                // Do not throw here; logout should be idempotent.
             }
 
-            userInfo.JwtToken = string.Empty;
-            userInfo.RefreshToken = string.Empty;
-            userInfo.RefreshTokenExpiry = DateTime.MinValue;
-
-            await _repo.UpdateUserInfoAsync(userInfo, cancellationToken);
             _tokenCacheService.RemoveTokenInfo(jwtToken);
         }
 

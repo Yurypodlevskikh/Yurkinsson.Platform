@@ -61,6 +61,7 @@
     import IconTrash from '@/components/icons/IconTrash.vue';
     import IconLogout from '@/components/icons/IconLogout.vue';
     import { logoutUser } from '@/services/authService'
+    import { openAuthTab } from '@/services/authService'
     import mockPresets from '@/data/mockPresets.js';
 
     const store = useStore()
@@ -75,10 +76,7 @@
         if (cachedPresets){
             presets.value = JSON.parse(cachedPresets)
             if (cachedPresets.length > 0) isVisible.value = true
-            if (import.meta.env.DEV) {
-                console.log("Cached presets is shown")
-            }
-        } else {
+         } else {
             try {
                 const data = await metronomeSettingsService.getUserPresets()
 
@@ -160,7 +158,10 @@
         try {
             const result = await logoutUser()
             if (result.success) {
-                showStatusMessage(result.message || 'Logged out successfully.', 'success')
+                // Do not show a "logged out" status message.
+                // Ensure reset flow is cleared and open the auth tab (shows Login/Register).
+                store.commit('clearPendingReset')
+                openAuthTab()
             } else {
                 showStatusMessage(result.message || 'Logout failed.', 'error')
             }

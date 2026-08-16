@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Sinks.MariaDB.Extensions;
 using System.Net;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
 using YurkinssonAuthentication.Configurations;
@@ -94,24 +95,6 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtYurkIdentity:Key"]))
         };
-        //options.Events = new JwtBearerEvents
-        //{
-        //    OnMessageReceived = context =>
-        //    {
-        //        Console.WriteLine($"Token received: {context.Token}");
-        //        return Task.CompletedTask;
-        //    },
-        //    OnTokenValidated = context =>
-        //    {
-        //        Console.WriteLine("Token validated.");
-        //        return Task.CompletedTask;
-        //    },
-        //    OnAuthenticationFailed = context =>
-        //    {
-        //        Console.WriteLine($"Authentication failed: {context.Exception.Message}");
-        //        return Task.CompletedTask;
-        //    }
-        //};
     });
 // Add Authorization
 builder.Services.AddAuthorization();

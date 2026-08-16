@@ -236,11 +236,40 @@ namespace YurkinssonAuthentication.Services
             }
             
             var identityUser = await _userManager.FindByIdAsync(nameIdentifier);
-            
-            if (identityUser == null || identityUser.RefreshToken != refreshTokenModel.RefreshToken ||
-                identityUser.RefreshTokenExpiry < DateTime.UtcNow)
+
+            //if (identityUser == null || identityUser.RefreshToken != refreshTokenModel.RefreshToken ||
+            //    identityUser.RefreshTokenExpiry < DateTime.UtcNow)
+            //{
+            //    //throw new Exception("Refresh token is not identical or has expired.");
+            //    tokenForUserResult.SignedIn = SignInResult.Failed;
+            //    return tokenForUserResult;
+            //}
+
+            Console.WriteLine("=== REFRESH VALIDATION ===");
+            Console.WriteLine($"User found: {identityUser != null}");
+            Console.WriteLine($"Refresh token matches: {identityUser?.RefreshToken == refreshTokenModel.RefreshToken}");
+            Console.WriteLine($"Refresh token expiry: {identityUser?.RefreshTokenExpiry:O}");
+            Console.WriteLine($"Current UTC: {DateTime.UtcNow:O}");
+            Console.WriteLine("==========================");
+
+            if (identityUser == null)
             {
-                //throw new Exception("Refresh token is not identical or has expired.");
+                Console.WriteLine($"Refresh token failed: user not found. UserId: {nameIdentifier}");
+                tokenForUserResult.SignedIn = SignInResult.Failed;
+                return tokenForUserResult;
+            }
+
+            if (identityUser.RefreshToken != refreshTokenModel.RefreshToken)
+            {
+                Console.WriteLine("Refresh token failed: refresh token mismatch.");
+                tokenForUserResult.SignedIn = SignInResult.Failed;
+                return tokenForUserResult;
+            }
+
+            if (identityUser.RefreshTokenExpiry < DateTime.UtcNow)
+            {
+                Console.WriteLine(
+                    $"Refresh token failed: token expired at {identityUser.RefreshTokenExpiry:u}.");
                 tokenForUserResult.SignedIn = SignInResult.Failed;
                 return tokenForUserResult;
             }
