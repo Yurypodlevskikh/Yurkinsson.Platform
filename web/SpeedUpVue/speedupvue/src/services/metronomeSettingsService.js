@@ -10,13 +10,19 @@ export default {
     async saveAsSettings(settingsDto) {
         try {
             const response = await httpClient.post('api/create-metronome-settings', settingsDto)
+            // If backend returns structured ApiResponseDto (success:false), do not throw;
             return response.data
         } catch (error) {
-            if (import.meta.env.DEV) {
-                // Log error in development mode
+            // Preserve logging only for genuine unexpected errors
+            const isLimitReached =
+                error?.response?.status === 400 &&
+                typeof error.response.data === 'string' &&
+                /preset limit reached/i.test(error.response.data)
+
+            if (!isLimitReached && import.meta.env.DEV) {
                 console.error('Error saving metronome settings:', error)
             }
-            
+
             throw error
         }
     },

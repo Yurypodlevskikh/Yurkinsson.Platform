@@ -123,22 +123,38 @@
         }
 
         try {
-            const response = await metronomeSettingsService.saveAsSettings(settingsDto)
-            store.commit('setSavedSettingsId', response.id)
-            //showStatusMessage('Settings saved successfully!')
+            if (!store.state.token || !store.state.refreshToken) {
+                // Prevent firing a non-silent API call when we cannot refresh — ask user to sign in.
+                showStatusMessage('Please sign in to save presets.')
+                // Use existing helper to open auth panel
+                const { openAuthTab } = await import('@/services/authService.js')
+                openAuthTab()
+                return
+            }
 
-            // Back to the presets
+            const response = await metronomeSettingsService.saveAsSettings(settingsDto)
+
+         // Handle business-rule failure returned as a normal 2xx response
+         if (response && (response.success === false || (typeof response === 'string' && /preset limit reached/i.test(response)))) {
+            // Show friendly user-facing message for preset limit (do not log to console)
+            const msg = (typeof response === 'string') ? response : (response.message || 'Saving is currently limited to 3 presets. We will notify users by email when saving is expanded.')
+            showStatusMessage(msg)
+            return
+        }
+
+            localStorage.removeItem('userPresets')  // invalidate stale cache
+            store.commit('setSavedSettingsId', response.id)
             store.commit('openSettingsPanelWithTab', 'presets')
         } catch (error) {
-            if (error.response && error.response.status === 400) {
-                // Show message from server about limit
-                showStatusMessage(error.response.data)
+            // genuine network / unexpected server errors — keep existing behavior
+            if (error?.response && error.response.status === 400) {
+                // If server still returns 400 with plain text (temporary fallback)
+                showStatusMessage(error.response.data || 'Unable to save settings.')
             } else {
                 if (import.meta.env.DEV) {
                     console.error('Failed to save settings: ', error)
                 }
-                
-                showStatusMessage('Error saving settings.')
+                showStatusMessage('Error saving settings. Please try again later.')
             }
         }
     }

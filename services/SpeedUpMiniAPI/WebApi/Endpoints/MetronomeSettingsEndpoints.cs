@@ -26,7 +26,9 @@ public static class MetronomeSettingsEndpoints
             var presetCount = await metronomeSettingsService.GetUserPresetsCountAsync(userId, cancellationToken);
 
             if (presetCount >= 3)
-                return Results.BadRequest("Preset limit reached. Support the project to save unlimited presets!");
+                return Results.Ok(BusinessLogic.DTOs.ApiResponseDto.Fail(
+                    "Saving is currently limited to 3 presets. We will notify users by email when saving is expanded.",
+                    errorCode: "PRESET_LIMIT_REACHED"));
 
             var savedSettings = await metronomeSettingsService.CreateSettingsAsync(dto, userId, cancellationToken);
 

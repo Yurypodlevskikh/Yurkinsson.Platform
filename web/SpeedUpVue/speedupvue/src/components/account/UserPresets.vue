@@ -74,8 +74,14 @@
     const fetchPresets = async () => {
         const cachedPresets = localStorage.getItem('userPresets')
         if (cachedPresets){
-            presets.value = JSON.parse(cachedPresets)
-            if (cachedPresets.length > 0) isVisible.value = true
+            const parsed = JSON.parse(cachedPresets)
+            if (Array.isArray(parsed)) {
+                presets.value = parsed
+                isVisible.value = parsed.length > 0
+            } else {
+                // fallback: clear bad cache and fetch from server
+                localStorage.removeItem('userPresets')
+            }
          } else {
             try {
                 const data = await metronomeSettingsService.getUserPresets()
