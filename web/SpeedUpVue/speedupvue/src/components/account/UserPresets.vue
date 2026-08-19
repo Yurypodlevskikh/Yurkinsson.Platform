@@ -7,7 +7,7 @@
             </template>
         </SpeedUpButton>
     </div>
-    <table class="table">
+    <table class="table" v-if="isVisible">
         <thead>
             <tr>
                 <th></th>
@@ -38,16 +38,13 @@
         </tbody>
     </table>
 
+    <div v-if="!isVisible" class="status-message mt-3">
+        You don't have any saved settings yet.
+    </div>
+
     <div v-if="activeDescription" class="alert alert-info mt-3">
         <strong>Description:</strong> {{ activeDescription }}
     </div>
-    <!--<div v-if="token">
-        <p><strong>Your token:</strong></p>
-        <pre>{{token}}</pre>
-    </div>
-    <div v-else>
-        <p>No token found. Please log in first.</p>
-    </div>-->
 </template>
 
 <script setup>
@@ -62,7 +59,6 @@
     import IconLogout from '@/components/icons/IconLogout.vue';
     import { logoutUser } from '@/services/authService'
     import { openAuthTab } from '@/services/authService'
-    import mockPresets from '@/data/mockPresets.js';
 
     const store = useStore()
     const { showStatusMessage } = useStatusMessage()
@@ -87,10 +83,9 @@
                 const data = await metronomeSettingsService.getUserPresets()
 
                 if (!Array.isArray(data) || data.length === 0) {
-                    // No server data — use mock presets for the UI prototype
-                    presets.value = mockPresets
-                    // Do not persist mock data to localStorage — keep it replaceable by API later
-                    isVisible.value = presets.value.length > 0
+                    // No server data — show empty state (do not use mock presets)
+                    presets.value = []
+                    isVisible.value = false
                     return;
                 }
 
@@ -100,9 +95,9 @@
                 if (import.meta.env.DEV) {
                     console.error('Error fetching presets: ', error)
                 }
-                // On error fallback to mock presets so the UI prototype remains usable
-                presets.value = mockPresets
-                isVisible.value = presets.value.length > 0
+                // On error show empty state so UI remains usable
+                presets.value = []
+                isVisible.value = false
             }
         }
     }
@@ -155,8 +150,6 @@
         }
     }
 
-    //// Computed token value from Vuex store
-    //const token = computed(() => store.getters.getToken)
     const nickname = computed(() => store.getters.getNickname)
 
     // Logout handler exposed in the user panel

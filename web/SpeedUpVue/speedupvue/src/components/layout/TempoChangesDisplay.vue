@@ -1,4 +1,6 @@
 <template>
+    <!-- Preset title (optional, subtle) -->
+    <div v-if="presetTitle" class="preset-title">{{ presetTitle }}</div>
     <div class="tempo-changes-display">
         <span class="source-icon-target">
             {{sourceBpm}}
@@ -25,6 +27,9 @@
             },
             targetBpm() {
                 return this.$store.getters.getTargetBpm;
+            },
+            presetTitle() {
+                return this.$store.getters.getCurrentPresetTitle || '';
             }
         }
     }
@@ -41,5 +46,14 @@
     .source-icon-target {
         display: flex;
         fill: var(--color-shadow-light);
+    }
+    /* Subtle title styling consistent with existing labels */
+    .preset-title {
+        font-size: 0.7rem;
+        color: var(--color-btn-text);
+        opacity: 0.9;
+        text-align: center;
+        text-transform: none;
+        margin-bottom: 0.2rem;
     }
 </style>

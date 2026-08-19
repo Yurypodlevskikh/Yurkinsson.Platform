@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div :class="['settings_panel', {settings_panel_show: isOpenSettingsPanel}]">
         <div v-if="statusMessage" class="status-message">
             {{statusMessage}}
@@ -38,6 +38,34 @@
                         </template>
                     </SpeedUpButton>
                 </div>
+
+                <!-- Demo Settings (collapsed by default) -->
+                <div class="demo-settings-section">
+                    <a class="demo-toggle-link" role="button" @click="toggleDemo" aria-expanded="demoOpen">
+                        Demo Settings
+                    </a>
+
+                    <div v-if="demoOpen" class="demo-list mt-3">
+                        <table class="table" style="width:100%">
+                            <thead>
+                                <tr><th></th><th></th><th></th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(preset, index) in demoPresets" :key="index">
+                                    <td>{{ index + 1 }}</td>
+                                    <td @click="applyDemoPreset(preset)" title="Load" class="title-cell">{{ preset.Title }}</td>
+                                    <td class="desc-cell">
+                                        <SpeedUpButton @click="showDemoDescription(preset.Description)" title="Description">
+                                            <template #icon>
+                                                <IconReadMe />
+                                            </template>
+                                        </SpeedUpButton>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <div v-if="activeTab === 'auth'">
@@ -73,11 +101,14 @@
     import AccountForm from '@/components/account/AccountForm.vue'
     import UserPresets from '@/components/account/UserPresets.vue'
     import SaveAsSettingsForm from '@/components/account/SaveAsSettingsForm.vue'
+    import IconReadMe from '@/components/icons/IconReadMe.vue'
     import metronomeSettingsService from '@/services/metronomeSettingsService'
 
     const { statusMessage, showStatusMessage } = useStatusMessage()
     // Access the store
     const store = useStore()
+
+    const demoOpen = ref(false)
 
     // Computed values from the store
     const isOpenSettingsPanel = computed(() => store.getters.getSettingsPanel)
@@ -122,6 +153,74 @@
             }
             showStatusMessage('Error updating the preset.')
         }
+    }
+
+    // Minimal demo presets matching MetronomeSettingsReadDto shape.
+    // Three static demo presets (frontend-only). Keep them realistic.
+    const demoPresets = [
+        {
+            id: null, // ensure not treated as a saved preset
+            Title: 'Take Three',
+            SourceBpm: 210, TargetBpm: 210,
+            BarsPerPattern: 0, TempoPeriods: 0,
+            IsReversed: false, IsRepeatPattern: false,
+            BeatsPerBar: 3, IsTempoIncreace: false,
+            Description: '3/4 (waltz time)'
+        },
+        {
+            id: null,
+            Title: 'Take Four',
+            SourceBpm: 102, TargetBpm: 102,
+            BarsPerPattern: 0, TempoPeriods: 0,
+            IsReversed: false, IsRepeatPattern: false,
+            BeatsPerBar: 4, IsTempoIncreace: false,
+            Description: '4/4'
+        },
+        {
+            id: null,
+            Title: 'Take Five',
+            SourceBpm: 176, TargetBpm: 176,
+            BarsPerPattern: 0, TempoPeriods: 0,
+            IsReversed: false, IsRepeatPattern: false,
+            BeatsPerBar: 5, IsTempoIncreace: false,
+            Description: '5/4'
+        }
+    ]
+
+    // Toggle demo section
+    function toggleDemo() {
+        demoOpen.value = !demoOpen.value
+    }
+
+    function applyDemoPreset(preset) {
+        // Map to the shape expected by store.loadPresetSettings (camelCase)
+        const presetForLoad = {
+            id: null, // ensure not treated as saved
+            sourceBpm: preset.SourceBpm,
+            targetBpm: preset.TargetBpm,
+            barsPerPattern: preset.BarsPerPattern,
+            tempoPeriods: preset.TempoPeriods,
+            isReversed: preset.IsReversed,
+            isRepeatPattern: preset.IsRepeatPattern,
+            beatsPerBar: preset.BeatsPerBar,
+            isTempoIncreace: preset.IsTempoIncreace,
+            title: preset.Title,
+            description: preset.Description
+        }
+
+        // Stop metronome if playing (reuse existing action)
+        if (store.state.isPlaying) {
+            store.dispatch('stopMetronome')
+        }
+
+        // Apply using existing mutation — this will set the UI as if a preset was selected
+        store.commit('loadPresetSettings', presetForLoad)
+        store.commit('setTempoText')
+        store.commit('setActiveSettingsTab', 'settings')
+    }
+
+    function showDemoDescription(description) {
+        showStatusMessage(description || 'No description provided.')
     }
 </script>
 
@@ -192,5 +291,22 @@
         justify-content: space-around;
         margin-top: 14px;
         text-align: center;
+    }
+
+    .demo-toggle-link {
+        display: inline-block;
+        color: var(--color-btn-text);
+        opacity: 0.85;
+        cursor: pointer;
+        font-size: 0.9rem;
+        text-decoration: underline;
+        margin-top: 0.5rem;
+    }
+
+    .demo-list .title-cell {
+        cursor: pointer;
+    }
+    .desc-cell {
+        float: right;
     }
 </style>

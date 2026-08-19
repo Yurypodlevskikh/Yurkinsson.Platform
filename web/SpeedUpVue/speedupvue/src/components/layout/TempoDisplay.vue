@@ -10,9 +10,9 @@
             </div>
         </div>
     </div>
-    <div class="tempo-text-display">
-        <div class="tempo-text">{{tempoText}}</div>
-    </div>
+        <div class="tempo-text-display">
+            <div class="tempo-text">{{tempoText}}</div>
+        </div>
 </template>
 
 <script>

@@ -17,6 +17,7 @@ const store = createStore({
         allFilesReady: true,
         savedSettingsId: null,
         nickname: '',
+        currentPresetTitle: '', // <-- new: title of currently applied preset (demo or saved)
         defaultSettings: {
             sourceMs: 500,
             targetMs: 500,
@@ -161,7 +162,9 @@ const store = createStore({
             state.isReverseBack = state.defaultSettings.isReverseBack;
         },
         loadPresetSettings(state, preset) {
-            state.savedSettingsId = preset.id;
+            state.savedSettingsId = preset.id ?? null; // demo presets should pass null id
+            state.currentPresetTitle = (preset.title || preset.Title) ?? '';
+
             state.sourceMs = Math.round(60000 / preset.sourceBpm);
             state.targetMs = Math.round(60000 / preset.targetBpm);
             state.tempo = preset.sourceBpm
@@ -838,6 +841,9 @@ const store = createStore({
         },
         getTwoDecimalPlaces(state) {
             return state.twoDecimalPlaces;
+        },
+        getCurrentPresetTitle(state) { // <-- new getter
+            return state.currentPresetTitle || '';
         },
         getIsReverse(state) {
             return state.isReverse;
