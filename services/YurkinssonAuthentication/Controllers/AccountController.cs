@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -20,16 +21,19 @@ namespace YurkinssonAuthentication.Controllers
     [EnableRateLimiting("ControllerTokenIpLimiter")]
     public class AccountController : ControllerBase
     {
+        private readonly UserManager<AppUser> _userManager;
         private readonly IAccountService _accountService;
         private readonly IAudienceService _audienceService;
         private readonly AppDbContext _appDbContext;
         private readonly ILogger<AccountController> _logger;
         private readonly IWebHostEnvironment _env;
 
-        public AccountController(IAccountService accountService, 
+        public AccountController(UserManager<AppUser> userManager, 
+            IAccountService accountService, 
             IAudienceService audienceService, AppDbContext appDbContext, 
             ILogger<AccountController> logger, IWebHostEnvironment env)
         {
+            _userManager = userManager;
             _accountService = accountService;
             _audienceService = audienceService;
             _appDbContext = appDbContext;
@@ -515,6 +519,63 @@ namespace YurkinssonAuthentication.Controllers
                 // Do not leak internal details; log as needed
                 _logger?.LogError(ex, "StartDeleteAccount failed for user {UserId}", userId);
                 return StatusCode(500, new { success = false, message = "Unable to process account deletion at this time." });
+            }
+        }
+
+        // New endpoint: POST /api/account/confirm-delete
+        [HttpPost("confirm-delete")]
+        public async Task<IActionResult> ConfirmDelete([FromBody] YurkinssonAuthentication.DTOs.User.ConfirmDeleteDto model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ApiResponse
+                {
+                    Success = false,
+                    Message = "Invalid request.",
+                    ErrorCode = ErrorCodes.INVALID_MODEL.ToString()
+                });
+            }
+
+            var user = await _userManager.FindByIdAsync(model.UserId);
+            if (user == null)
+            {
+                return NotFound(new ApiResponse
+                {
+                    Success = false,
+                    Message = "User not found.",
+                    ErrorCode = ErrorCodes.USER_NOT_FOUND.ToString()
+                });
+            }
+
+            try
+            {
+                var tokenValid = await _accountService.VerifyDeleteTokenAsync(model.UserId!, model.Token!);
+                if (!tokenValid)
+                {
+                    return BadRequest(new ApiResponse
+                    {
+                        Success = false,
+                        Message = "Invalid or expired deletion token.",
+                        ErrorCode = ErrorCodes.INVALID_TOKEN.ToString()
+                    });
+                }
+
+                // Token is valid — but per task instructions do NOT delete the account yet.
+                // Return success to caller so the BFF/frontend can proceed to orchestrate deletion next.
+                return Ok(new ApiResponse
+                {
+                    Success = true,
+                    Message = "Deletion token validated. Proceed to confirm deletion."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error validating delete token for user {UserId}", model.UserId);
+                return StatusCode(500, new ApiResponse
+                {
+                    Success = false,
+                    Message = "Server error while validating deletion token."
+                });
             }
         }
     }

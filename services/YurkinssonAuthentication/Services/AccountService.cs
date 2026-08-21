@@ -674,9 +674,38 @@ namespace YurkinssonAuthentication.Services
 <p><a href='{deleteLink}'>Confirm account deletion</a></p>
 <p>If you did not request deletion, ignore this message or contact support.</p>";
 
-    await _emailSender.SendEmailAsync(user.Email, subject, htmlMessage);
+            await _emailSender.SendEmailAsync(user.Email, subject, htmlMessage);
 
-    return true;
-}
+            return true;
+        }
+
+        // Added method: VerifyDeleteTokenAsync
+        public async Task<bool> VerifyDeleteTokenAsync(string userId, string encodedToken)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(encodedToken))
+                return false;
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return false;
+
+            // Decode the token the same way we encode for emails (Base64Url + Uri.Escape)
+            string tokenToVerify = encodedToken;
+            try
+            {
+                var unescaped = Uri.UnescapeDataString(tokenToVerify);
+                var decodedBytes = WebEncoders.Base64UrlDecode(unescaped);
+                tokenToVerify = Encoding.UTF8.GetString(decodedBytes);
+            }
+            catch
+            {
+                // If decoding fails, treat as invalid token
+                return false;
+            }
+
+            // Verify token using Identity token provider with the dedicated purpose "DeleteAccount"
+            // This reuses the ASP.NET Identity verification mechanism already used for other token flows.
+            var isValid = await _userManager.VerifyUserTokenAsync(user, TokenOptions.DefaultProvider, "DeleteAccount", tokenToVerify);
+            return isValid;
+        }
     }
 }
