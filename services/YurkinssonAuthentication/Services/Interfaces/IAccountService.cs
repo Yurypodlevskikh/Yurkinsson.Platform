@@ -20,5 +20,6 @@ namespace YurkinssonAuthentication.Services.Interfaces
         Task<AppUser> GetUserByIdAsync(string userId, CancellationToken cancellationToken);
         Task<IdentityResult> UpdateUserAsync(AppUser user, CancellationToken cancellationToken);
         Task<IdentityResult> DeleteUserAsync(AppUser user, CancellationToken cancellationToken);
+        Task<bool> StartDeleteAccountAsync(string userId, string v);
     }
 }

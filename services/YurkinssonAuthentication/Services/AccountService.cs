@@ -628,5 +628,55 @@ namespace YurkinssonAuthentication.Services
             }
             return Convert.ToBase64String(randomNumber);
         }
+
+        public async Task<bool> StartDeleteAccountAsync(string userId, string password)
+        {
+            if (string.IsNullOrEmpty(userId)) return false;
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return false;
+
+            // Verify the provided current password before generating the deletion token
+            var passwordValid = await _userManager.CheckPasswordAsync(user, password);
+            if (!passwordValid) return false;
+
+            // Generate a deletion token with a distinct purpose to avoid confusion with other tokens
+            // Use the default token provider and a dedicated purpose string "DeleteAccount"
+            var deletionToken = await _userManager.GenerateUserTokenAsync(user, TokenOptions.DefaultProvider, "DeleteAccount");
+
+            // Encode the deletion token using the same pattern used for password reset/confirmation:
+            // Base64UrlEncode(UTF8(token)) and then Uri.EscapeDataString
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(deletionToken));
+            var safeToken = Uri.EscapeDataString(encodedToken);
+
+            // Ensure frontend base URL is resolved from configuration (prefer client-specific redirect)
+            string? clientBase = _config["ClientRedirectUrls:SpeedUpVue"];
+            if (string.IsNullOrWhiteSpace(clientBase))
+            {
+                clientBase = _config["Frontend:BaseUrl"];
+            }
+
+            if (string.IsNullOrWhiteSpace(clientBase))
+            {
+                throw new InvalidOperationException("No frontend base URL configured. Set 'Frontend:BaseUrl' or 'ClientRedirectUrls:SpeedUpVue' in configuration.");
+            }
+
+            clientBase = clientBase.TrimEnd('/');
+
+            // Build confirmation link for SPA to call the BFF confirm-delete endpoint (SPA route example: /confirm-delete)
+            var safeUserId = Uri.EscapeDataString(user.Id);
+            var deleteLink = $"{clientBase}/confirm-delete?userId={safeUserId}&token={safeToken}";
+
+            var subject = "Confirm account deletion";
+            var htmlMessage = $@"<h3>Account deletion requested</h3>
+<p>You (or someone with access to your account) requested account deletion. This operation is permanent and will remove your account and associated data.</p>
+<p>If you initiated this request, confirm account deletion by clicking the link below. This link is valid for a short time:</p>
+<p><a href='{deleteLink}'>Confirm account deletion</a></p>
+<p>If you did not request deletion, ignore this message or contact support.</p>";
+
+    await _emailSender.SendEmailAsync(user.Email, subject, htmlMessage);
+
+    return true;
+}
     }
 }

@@ -486,5 +486,36 @@ namespace YurkinssonAuthentication.Controllers
             }
             return Ok("Account successfully deleted.");
         }
+
+        [HttpPost("start-delete-account")]
+        [Authorize]
+        public async Task<IActionResult> StartDeleteAccount([FromBody] YurkinssonAuthentication.DTOs.User.DeleteAccountRequestDto model)
+        {
+            if (!ModelState.IsValid) return BadRequest(new { success = false, message = "Invalid request." });
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest(new { success = false, message = "Invalid user." });
+            }
+
+            try
+            {
+                var emailSent = await _accountService.StartDeleteAccountAsync(userId, model.Password ?? string.Empty);
+                if (!emailSent)
+                {
+                    // Either password verification failed or user/email not found
+                    return BadRequest(new { success = false, message = "Failed to initiate account deletion. Check password and try again." });
+                }
+
+                return Ok(new { success = true, message = "Deletion confirmation email sent." });
+            }
+            catch (Exception ex)
+            {
+                // Do not leak internal details; log as needed
+                _logger?.LogError(ex, "StartDeleteAccount failed for user {UserId}", userId);
+                return StatusCode(500, new { success = false, message = "Unable to process account deletion at this time." });
+            }
+        }
     }
 }
