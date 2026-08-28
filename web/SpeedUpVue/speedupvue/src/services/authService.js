@@ -162,3 +162,31 @@ export async function resetPassword(model) {
         return { success: false, message: 'Unable to reset password. Try again later.' }
     }
 }
+
+/*
+ * New: Account deletion flows
+ * These functions interact with the new account deletion endpoints:
+ * - startDeleteAccount: initiates the deletion process, sends a confirmation email
+ * - confirmDelete: confirms the account deletion
+ */
+export async function startDeleteAccount(password) {
+    try {
+        const response = await httpClient.post('api/start-delete-account', { password })
+        return { success: response.status >= 200 && response.status < 300, message: response.data?.message ?? 'Confirmation email sent.' }
+    } catch (err) {
+        if (import.meta.env.DEV) console.error('Start delete account error:', err)
+        if (err.response && err.response.data) return { success: false, message: err.response.data }
+        return { success: false, message: 'Unable to request account deletion. Try again later.' }
+    }
+}
+
+export async function confirmDelete({ userId, token }) {
+    try {
+        const response = await httpClient.post('api/confirm-delete', { userId, token })
+        return { success: response.status >= 200 && response.status < 300, message: response.data?.message ?? 'Account deletion confirmed.' }
+    } catch (err) {
+        if (import.meta.env.DEV) console.error('Confirm delete error:', err)
+        if (err.response && err.response.data) return { success: false, message: err.response.data }
+        return { success: false, message: 'Unable to confirm account deletion. Try again later.' }
+    }
+}

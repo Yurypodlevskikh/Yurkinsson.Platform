@@ -64,8 +64,43 @@ function handleResetPasswordFromUrl() {
     }
 }
 
+async function handleDeleteConfirmationFromUrl() {
+    try {
+        const params = new URLSearchParams(window.location.search)
+        const userId = params.get('userId')
+        const token = params.get('token')
+
+        // SPA route for deletion confirmation usually includes /confirm-delete or same query params
+        if (userId && token && (window.location.pathname && window.location.pathname.toLowerCase().includes('confirm-delete'))) {
+            // Call BFF confirm-delete proxy
+            const { confirmDelete, openAuthTab } = await import('@/services/authService.js')
+            const { showStatusMessage } = await import('@/services/useStatusMessage')
+            const result = await confirmDelete({ userId, token })
+
+            // Remove sensitive params regardless of result
+            params.delete('userId')
+            params.delete('token')
+            const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '')
+            history.replaceState(null, '', newUrl)
+
+            if (result.success) {
+                // Clear client auth and return to signed-out UI
+                store.commit('clearAuthData')
+                openAuthTab()
+                showStatusMessage(result.message || 'Your account has been deleted.')
+            } else {
+                // Show server-provided error (invalid token, expired, etc.)
+                showStatusMessage(result.message || 'Unable to confirm account deletion.')
+            }
+        }
+    } catch (err) {
+        if (import.meta.env.DEV) console.error('Error processing delete confirmation URL:', err)
+    }
+}
+
 handleEmailConfirmationFromUrl()
 handleResetPasswordFromUrl()
+handleDeleteConfirmationFromUrl()
 
 const app = createApp(App);
 

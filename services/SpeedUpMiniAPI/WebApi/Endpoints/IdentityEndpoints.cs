@@ -1,6 +1,8 @@
 using BusinessLogic.DTOs;
 using BusinessLogic.Interfaces;
 using BusinessLogic.Models;
+using DataAccess.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using WebApi.Extensions;
 
@@ -168,7 +170,7 @@ public static class IdentityEndpoints
             }
         }).RequireRateLimiting("IdentityLimiter");
 
-        protectedEndpoints.MapDelete("/delete-account", async (HttpContext httpContext, IIdentityApiService identityApiService) =>
+        protectedEndpoints.MapDelete("/delete-account", async (HttpContext httpContext, [FromServices] IIdentityApiService identityApiService, [FromBody] DeleteAccountRequestDto model, CancellationToken cancellationToken) =>
         {
             try
             {
@@ -178,7 +180,13 @@ public static class IdentityEndpoints
                     return Results.BadRequest("Access token is missing");
                 }
 
-                var deleted = await identityApiService.DeleteAccountAsync(accessToken);
+                // Validate password
+                if (string.IsNullOrEmpty(model.Password))
+                {
+                    return Results.BadRequest("Password is required to delete account");
+                }
+
+                var deleted = await identityApiService.DeleteAccountAsync(accessToken, cancellationToken);
                     if (deleted.IsSuccessStatusCode)
                     {
                         return Results.Ok("Your account has been deleted");
@@ -262,6 +270,79 @@ public static class IdentityEndpoints
             catch (Exception /*ex*/)
             {
                 return Results.BadRequest(/*ex.Message*/);
+            }
+        }).RequireRateLimiting("IdentityLimiter");
+
+        // Public endpoint to accept SPA confirm-delete link (no Authorization)
+        authEndpoints.MapPost("/confirm-delete", async (IIdentityApiService identityApiService, ConfirmDeleteRequestDto model, IUserInfoRepo userInfoRepo, ITokenCacheService tokenCacheService, CancellationToken cancellationToken) =>
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.UserId) || string.IsNullOrWhiteSpace(model.Token))
+                return Results.BadRequest(new { success = false, message = "userId and token are required." });
+
+            // Forward confirm-delete to Identity
+            var response = await identityApiService.ConfirmDeleteAsync(model);
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            // If Identity deleted the user, attempt application cleanup (best-effort)
+            if (response.IsSuccessStatusCode)
+            {
+                try
+                {
+                    var userInfo = await userInfoRepo.GetUserInfoByGuidIdAsync(model.UserId!, cancellationToken);
+                    if (userInfo != null)
+                    {
+                        // Delete application user info (should cascade or delete dependents)
+                        await userInfoRepo.DeleteUserInfoAsync(userInfo, cancellationToken);
+
+                        // Remove token cache if any token was stored
+                        if (!string.IsNullOrEmpty(userInfo.JwtToken))
+                        {
+                            tokenCacheService.RemoveTokenInfo(userInfo.JwtToken);
+                        }
+                    }
+
+                    return Results.Ok(new { success = true, message = "Account deleted and application data cleaned up." });
+                }
+                catch (Exception ex)
+                {
+                    // Do not fail the entire operation — Identity account has been deleted; app cleanup failed.
+                    // Log the error (assume logging available) and return partial success so caller can surface it.
+                    Console.WriteLine($"Application cleanup after delete failed: {ex.Message}");
+                    return Results.Ok(new { success = true, message = "Account deleted in Identity. Application cleanup pending." });
+                }
+            }
+
+            // Identity returned non-success — forward safe message
+            return Results.BadRequest(new { success = false, message = content ?? "Failed to delete account." });
+        }).RequireRateLimiting("IdentityLimiter");
+
+        protectedEndpoints.MapPost("/start-delete-account", async (HttpContext httpContext, IIdentityApiService identityApiService, DeleteAccountRequestDto model) =>
+        {
+            try
+            {
+                var accessToken = httpContext.GetAccessToken();
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    return Results.BadRequest("Access token is missing");
+                }
+
+                var response = await identityApiService.StartDeleteAccountAsync(accessToken, model);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return Results.Ok(new { success = true, message = "Deletion confirmation email sent." });
+                }
+                else
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    // Forward safe message when available
+                    return Results.BadRequest(new { success = false, message = content ?? "Failed to initiate account deletion." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest("Failed to initiate account deletion.");
             }
         }).RequireRateLimiting("IdentityLimiter");
     }

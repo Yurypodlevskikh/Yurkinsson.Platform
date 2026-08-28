@@ -16,8 +16,10 @@ namespace BusinessLogic.Interfaces
         Task<AuthenticateResponse?> RefreshTokenAsync(TokenRequestModel tokenRequestModelModel, CancellationToken cancellationToken = default);
         Task<HttpResponseMessage> LogoutAsync(string jwtToken, CancellationToken cancellationToken = default);
         Task<HttpResponseMessage> DeleteAccountAsync(string jwtToken, CancellationToken cancellationToken = default);
+        Task<HttpResponseMessage> StartDeleteAccountAsync(string jwtToken, DeleteAccountRequestDto model, CancellationToken cancellationToken = default);
         Task<IsAuthenticateDto?> IsSignedInAsync(string accessToken, CancellationToken cancellationToken = default);
         Task<HttpResponseMessage> ConfirmEmailAsync(ConfirmEmail confirmEmail, CancellationToken cancellationToken = default);
+        Task<HttpResponseMessage> ConfirmDeleteAsync(ConfirmDeleteRequestDto model, CancellationToken cancellationToken = default);
         string? GetUserGuidId(JwtSecurityToken jwtToken);
         string? GetUserNickName(JwtSecurityToken jwtToken);
         Task<HttpResponseMessage> ResendConfirmationAsync(string userId, CancellationToken cancellationToken = default);

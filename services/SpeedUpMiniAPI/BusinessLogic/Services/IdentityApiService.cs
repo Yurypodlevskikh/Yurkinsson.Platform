@@ -1,17 +1,16 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text;
-using System.Text.Json;
 using AutoMapper;
 using BusinessLogic.DTOs;
 using BusinessLogic.Interfaces;
 using BusinessLogic.Models;
-using DataAccess.Models;
 using DataAccess.Interfaces;
-using Microsoft.Extensions.Options;
+using DataAccess.Models;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 
 namespace BusinessLogic.Services;
 
@@ -21,10 +20,13 @@ internal class IdentityApiService : IIdentityApiService
     private readonly IUserInfoRepo _repo;
     private readonly string _baseUrl;
     private readonly IMapper _mapper;
-    private readonly TokenCacheService _tokenCacheService;
+    private readonly ITokenCacheService _tokenCacheService;
     private readonly IConfiguration _configuration;
 
-    public IdentityApiService(HttpClient httpClient, IOptions<IdentityApiSettings> settings, IMapper mapper, IUserInfoRepo repo, TokenCacheService tokenCacheService, IConfiguration configuration)
+    public IdentityApiService(HttpClient httpClient, 
+        IOptions<IdentityApiSettings> settings, 
+        IMapper mapper, IUserInfoRepo repo,
+        ITokenCacheService tokenCacheService, IConfiguration configuration)
     {
         _httpClient = httpClient;
         _repo = repo;
@@ -452,6 +454,31 @@ internal class IdentityApiService : IIdentityApiService
         }
 
         return isAuthenticateDto;
+    }
+
+    public async Task<HttpResponseMessage> ConfirmDeleteAsync(ConfirmDeleteRequestDto model, CancellationToken cancellationToken = default)
+    {
+        var requestMessage = new HttpRequestMessage(HttpMethod.Post, "api/account/confirm-delete")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(model), Encoding.UTF8, "application/json")
+        };
+
+        var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
+        return response;
+    }
+
+    public async Task<HttpResponseMessage> StartDeleteAccountAsync(string jwtToken, DeleteAccountRequestDto model, CancellationToken cancellationToken = default)
+    {
+        var requestMessage = new HttpRequestMessage(HttpMethod.Post, "api/account/start-delete-account")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(model), Encoding.UTF8, "application/json")
+        };
+
+        // Attach the caller's access token
+        requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", jwtToken);
+
+        var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
+        return response;
     }
 
     private JwtSecurityToken DecodeJwtToken(string token)

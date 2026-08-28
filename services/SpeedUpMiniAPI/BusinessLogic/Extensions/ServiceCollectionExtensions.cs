@@ -27,7 +27,7 @@ public static class ServiceCollectionExtensions
             client.BaseAddress = new Uri(settings.BaseUrl);
         });
         services.AddMemoryCache();
-        services.AddSingleton<TokenCacheService>();
+        services.AddSingleton<ITokenCacheService, TokenCacheService>();
         // services.AddHttpClient<IIdentityApiService, IdentityApiService>(client =>
         // {
         //     client.BaseAddress = new Uri("https://localhost:7261/");

@@ -1,12 +1,11 @@
-using System.IdentityModel.Tokens.Jwt;
-using BusinessLogic.DTOs;
+using BusinessLogic.Interfaces;
 using BusinessLogic.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace BusinessLogic.Services
 {
-    internal class TokenCacheService
+    internal class TokenCacheService : ITokenCacheService
     {
         private readonly IMemoryCache _cache;
         private readonly TimeSpan _cacheDuration;

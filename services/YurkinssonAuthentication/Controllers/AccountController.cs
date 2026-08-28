@@ -536,21 +536,23 @@ namespace YurkinssonAuthentication.Controllers
                 });
             }
 
+            // Try to find the user first
             var user = await _userManager.FindByIdAsync(model.UserId);
             if (user == null)
             {
-                return NotFound(new ApiResponse
+                // The user is already deleted or not found — respond idempotently
+                return Ok(new ApiResponse
                 {
-                    Success = false,
-                    Message = "User not found.",
-                    ErrorCode = ErrorCodes.USER_NOT_FOUND.ToString()
+                    Success = true,
+                    Message = "Account already removed."
                 });
             }
 
             try
             {
-                var tokenValid = await _accountService.VerifyDeleteTokenAsync(model.UserId!, model.Token!);
-                if (!tokenValid)
+                // Decode & verify token using dedicated purpose "DeleteAccount"
+                var tokenIsValid = await _accountService.VerifyDeleteTokenAsync(model.UserId!, model.Token!);
+                if (!tokenIsValid)
                 {
                     return BadRequest(new ApiResponse
                     {
@@ -560,21 +562,30 @@ namespace YurkinssonAuthentication.Controllers
                     });
                 }
 
-                // Token is valid — but per task instructions do NOT delete the account yet.
-                // Return success to caller so the BFF/frontend can proceed to orchestrate deletion next.
+                // Token valid: delete the Identity user now
+                var result = await _accountService.DeleteUserAsync(user, CancellationToken.None);
+                if (!result.Succeeded)
+                {
+                    return BadRequest(new ApiResponse
+                    {
+                        Success = false,
+                        Message = "Failed to delete account in Identity."
+                    });
+                }
+
                 return Ok(new ApiResponse
                 {
                     Success = true,
-                    Message = "Deletion token validated. Proceed to confirm deletion."
+                    Message = "Account successfully deleted."
                 });
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error validating delete token for user {UserId}", model.UserId);
+                _logger?.LogError(ex, "Error validating/deleting account for user {UserId}", model.UserId);
                 return StatusCode(500, new ApiResponse
                 {
                     Success = false,
-                    Message = "Server error while validating deletion token."
+                    Message = "Server error while processing deletion."
                 });
             }
         }

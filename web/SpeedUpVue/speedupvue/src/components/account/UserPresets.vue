@@ -1,11 +1,10 @@
 ﻿<template>
-    <div class="presets-header">
-        <h2>{{ nickname }}'s Presets</h2>
-        <SpeedUpButton @click="onLogout" title="Logout" class="logout-btn">
-            <template #icon>
-                <IconLogout />
-            </template>
-        </SpeedUpButton>
+    <!-- Delete Account (collapsed by default) -->
+    <div class="delete-account-section">
+        <div v-if="deleteAccountOpen" class="">
+            <!-- Delete account UI -->
+            <DeleteAccountForm />
+        </div>
     </div>
     <table class="table" v-if="isVisible">
         <thead>
@@ -17,6 +16,25 @@
             </tr>
         </thead>
         <tbody>
+            <tr>
+                <td colspan="2">
+                    <h3>{{ nickname }}'s Presets</h3>
+                </td>
+                <td class="desc-cell">
+                    <SpeedUpButton @click="onLogout" title="Logout">
+                        <template #icon>
+                            <IconLogout />
+                        </template>
+                    </SpeedUpButton>
+                </td>
+                <td class="desc-cell">
+                    <SpeedUpButton @click="toggleDeleteAccount" title="Delete Account" aria-expanded="deleteAccountOpen">
+                        <template #icon>
+                            <IconPersonCircleMinus />
+                        </template>
+                    </SpeedUpButton>
+                </td>
+            </tr>
             <tr v-for="(preset, index) in presets" :key="preset.id">
                 <td>{{ index + 1 }}</td>
                 <td @click="loadPreset(preset.id)" title="Load" class="title-cell">{{ preset.title }}</td>
@@ -35,12 +53,15 @@
                     </SpeedUpButton>
                 </td>
             </tr>
+            <tr v-if="!isVisible">
+                <td colspan="4">
+                    <div class="status-message">
+                        You don't have any saved settings yet.
+                    </div>
+                </td>
+            </tr>
         </tbody>
     </table>
-
-    <div v-if="!isVisible" class="status-message mt-3">
-        You don't have any saved settings yet.
-    </div>
 
     <div v-if="activeDescription" class="alert alert-info mt-3">
         <strong>Description:</strong> {{ activeDescription }}
@@ -48,7 +69,7 @@
 </template>
 
 <script setup>
-    import { computed, ref, onMounted }from 'vue'
+    import { computed, ref, onMounted } from 'vue'
     import { useStore } from 'vuex'
     import metronomeSettingsService from '@/services/metronomeSettingsService'
     import { useStatusMessage } from '@/services/useStatusMessage'
@@ -57,19 +78,22 @@
     import IconReadMe from '@/components/icons/IconReadMe.vue';
     import IconTrash from '@/components/icons/IconTrash.vue';
     import IconLogout from '@/components/icons/IconLogout.vue';
+    import IconPersonCircleMinus from '@/components/icons/IconPersonCircleMinus.vue';
     import { logoutUser } from '@/services/authService'
     import { openAuthTab } from '@/services/authService'
+    import DeleteAccountForm from '@/components/account/DeleteAccountForm.vue'
 
     const store = useStore()
     const { showStatusMessage } = useStatusMessage()
     const presets = ref([])
     const activeDescription = ref(null)
     const isVisible = ref(false)
+    const deleteAccountOpen = ref(false)
 
     // fetch presets on mount
     const fetchPresets = async () => {
         const cachedPresets = localStorage.getItem('userPresets')
-        if (cachedPresets){
+        if (cachedPresets) {
             const parsed = JSON.parse(cachedPresets)
             if (Array.isArray(parsed)) {
                 presets.value = parsed
@@ -78,7 +102,7 @@
                 // fallback: clear bad cache and fetch from server
                 localStorage.removeItem('userPresets')
             }
-         } else {
+        } else {
             try {
                 const data = await metronomeSettingsService.getUserPresets()
 
@@ -169,6 +193,11 @@
             showStatusMessage('Unexpected error during logout.', 'error')
         }
     }
+
+    // Toggle demo section
+    function toggleDeleteAccount() {
+        deleteAccountOpen.value = !deleteAccountOpen.value
+    }
 </script>
 
 <style scoped>
@@ -179,37 +208,44 @@
         gap: 0.5rem;
         margin-bottom: 0.5rem;
     }
-    .presets-header h2 {
-        margin: 0;
-        font-size: 1.25rem;
-    }
+
+        .presets-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
     .logout-btn {
         /* reuse ButtonSpeedUp styling; minimal alignment tweak */
         display: inline-flex;
         align-items: center;
     }
 
-    .table{
+    .table {
         width: 100%;
         border-collapse: collapse;
     }
+
         .table td {
             border-bottom: 1px solid var(--color-box-shadow);
             padding: 0.2rem 0.4rem;
             text-align: left;
         }
+
         .table th {
             background: var(--color-btn-back);
             color: var(--color-background-mute-before);
         }
+
     .title-cell {
         cursor: pointer;
         color: var(--color-box-shadowt);
         text-decoration: underline;
     }
-    .title-cell:hover{
-        color: var(--color-btn-text);
-    }
+
+        .title-cell:hover {
+            color: var(--color-btn-text);
+        }
+
     .action-cell, .desc-cell {
         width: 30px;
         text-align: center;
