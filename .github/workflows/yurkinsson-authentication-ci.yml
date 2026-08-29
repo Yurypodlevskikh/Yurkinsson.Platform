@@ -1,0 +1,30 @@
+name: YurkinssonAuthentication CI
+
+on:
+  push:
+    paths:
+      - 'services/YurkinssonAuthentication/**'
+      - '.github/workflows/yurkinsson-authentication-ci.yml'
+  pull_request:
+    paths:
+      - 'services/YurkinssonAuthentication/**'
+      - '.github/workflows/yurkinsson-authentication-ci.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore services/YurkinssonAuthentication/YurkinssonAuthentication.csproj
+
+      - name: Build
+        run: dotnet build services/YurkinssonAuthentication/YurkinssonAuthentication.csproj --configuration Release --no-restore
