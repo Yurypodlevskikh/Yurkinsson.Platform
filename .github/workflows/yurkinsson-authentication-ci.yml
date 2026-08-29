@@ -31,3 +31,9 @@ jobs:
         
       - name: Publish
         run: dotnet publish services/YurkinssonAuthentication/YurkinssonAuthentication.csproj --configuration Release --no-build --output ./publish
+        
+      - name: Upload publish artifact
+        uses: actions/upload-artifact@4
+        with:
+          name: yurkinsson-authentication
+          path: ./publish
