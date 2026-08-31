@@ -1,0 +1,65 @@
+name: SpeedUpMiniAPI CI
+
+on:
+  push:
+    paths:
+      - 'services/SpeedUpMiniAPI/**'
+      - '.github/workflows/speedup-miniapi-ci.yml'
+  pull_request:
+    paths:
+      - 'services/SpeedUpMiniAPI/**'
+      - '.github/workflows/speedup-miniapi-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore services/SpeedUpMiniAPI/WebApi/WebApi.csproj
+
+      - name: Build
+        run: dotnet build services/SpeedUpMiniAPI/WebApi/WebApi.csproj --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish services/SpeedUpMiniAPI/WebApi/WebApi.csproj --configuration Release --no-build --output ./publish
+
+      - name: Create production configuration
+        shell: pwsh
+        env:
+          PROD_SPEEDUP_MARIADB: ${{ secrets.PROD_SPEEDUP_MARIADB }}
+        run: |
+          $config = @{
+            ConnectionStrings = @{
+              MariaDbSpeedUp = $env:PROD_SPEEDUP_MARIADB
+            }
+            IdentityApiSettings = @{
+              BaseUrl = "https://simsim.yurkinsson.com/"
+              CacheDuration = "00:20:00"
+              Audience = "speedup-backend.yurkinsson.com"
+            }
+            AllowedOrigins = "https://speedup.yurkinsson.com,https://simsim.yurkinsson.com"
+            Frontend = @{
+              BaseUrl = "https://speedup.yurkinsson.com"
+            }
+            ClientRedirectUrls = @{
+              SpeedUpVue = "https://speedup.yurkinsson.com"
+            }
+          }
+
+          $config | ConvertTo-Json -Depth 5 | Set-Content ./publish/appsettings.Production.json
+
+      - name: Upload publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: speedup-miniapi
+          path: ./publish
