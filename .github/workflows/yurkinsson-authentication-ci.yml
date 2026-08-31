@@ -88,8 +88,12 @@ jobs:
             MSDEPLOY_PASSWORD: ${{ secrets.MSDEPLOY_PASSWORD }}
           run: |
             $msdeploy = "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
-            $source = "-source:contentPath=./publish"
+            $publishPath = (Resolve-Path "./publish").Path
+
+            $source = "-source:contentPath=$publishPath"
             $destination = "-dest:contentPath=simsim.yurkinsson.com,userName=$env:MSDEPLOY_USERNAME,password=$env:MSDEPLOY_PASSWORD,computerName=https://simsim.yurkinsson.com:8172/msdeploy.axd?site=simsim.yurkinsson.com,authtype=Basic"
+
+            Write-Host "Deploying from: $publishPath"
 
             & $msdeploy `
               $source `
