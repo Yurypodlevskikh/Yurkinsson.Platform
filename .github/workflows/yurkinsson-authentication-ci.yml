@@ -9,6 +9,7 @@ on:
     paths:
       - 'services/YurkinssonAuthentication/**'
       - '.github/workflows/yurkinsson-authentication-ci.yml'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -37,3 +38,56 @@ jobs:
         with:
           name: yurkinsson-authentication
           path: ./publish
+  deploy:
+    if: github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: windows-latest
+  
+  steps:
+      - name: Download publish artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: yurkinsson-authentication
+          path: ./publish
+          
+      - name: Create production configuration
+        shell: pwsh
+        env:
+          PROD_MARIADB_IDENTITY: ${{ secrets.PROD_MARIADB_IDENTITY }}
+          PROD_JWT_KEY: ${{ secrets.PROD_JWT_KEY }}
+          PROD_SMTP: ${{ secrets.PROD_SMTP }}
+          PROD_SMTP_PASSWORD: ${{ secrets.PROD_SMTP_PASSWORD }}
+          PROD_SMTP_FROM: ${{ secrets.PROD_SMTP_FROM }}
+        run:
+          $config = @{
+            ConnectionStrings = @{
+              MariaDbIdentity = $env:PROD_MARIADB_IDENTITY
+            }
+            JwtYurkIdentity = @{
+              Key = $env:PROD_JWT_KEY
+              Issuer = "https://simsim.yurkinsson.com"
+              Audiences = "speedup-backend.yurkinsson.com,localhost:7110"
+              TokenExpirationInMinutes = 10
+              RefreshTokenExpiry = 12
+            }
+            SmtpNoreplYurkiHost = @{
+              Smtp = $env:PROD_SMTP
+              Port = 465
+              From = $env:PROD_SMTP_FROM
+              Pass = $env:PROD_SMTP_PASSWORD
+            }
+          }
+          
+          $config | ConvertTo-Json -Depth 5 | Set-Content ./publish/appsettings.Production.json
+          
+          - name: Deploy to IIS
+        shell: pwsh
+        env:
+          MSDEPLOY_USERNAME: ${{ secrets.MSDEPLOY_USERNAME }}
+          MSDEPLOY_PASSWORD: ${{ secrets.MSDEPLOY_PASSWORD }}
+        run: |
+          & "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe" `
+            -source:contentPath="./publish" `
+            -dest:contentPath="simsim.yurkinsson.com",userName="$env:MSDEPLOY_USERNAME",password="$env:MSDEPLOY_PASSWORD",computerName="https://simsim.yurkinsson.com:8172/msdeploy.axd?site=simsim.yurkinsson.com",authtype="Basic" `
+            -allowUntrusted `
+            -verb:sync
