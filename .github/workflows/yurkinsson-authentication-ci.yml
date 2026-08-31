@@ -58,7 +58,7 @@ jobs:
           PROD_SMTP: ${{ secrets.PROD_SMTP }}
           PROD_SMTP_PASSWORD: ${{ secrets.PROD_SMTP_PASSWORD }}
           PROD_SMTP_FROM: ${{ secrets.PROD_SMTP_FROM }}
-        run:
+        run: |
           $config = @{
             ConnectionStrings = @{
               MariaDbIdentity = $env:PROD_MARIADB_IDENTITY
@@ -76,6 +76,7 @@ jobs:
               From = $env:PROD_SMTP_FROM
               Pass = $env:PROD_SMTP_PASSWORD
             }
+            RegisteredApplications = "https://speedup-backend.yurkinsson.com"
           }
           
           $config | ConvertTo-Json -Depth 5 | Set-Content ./publish/appsettings.Production.json
