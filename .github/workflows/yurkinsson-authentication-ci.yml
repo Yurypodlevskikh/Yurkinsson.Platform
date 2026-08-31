@@ -87,8 +87,12 @@ jobs:
             MSDEPLOY_USERNAME: ${{ secrets.MSDEPLOY_USERNAME }}
             MSDEPLOY_PASSWORD: ${{ secrets.MSDEPLOY_PASSWORD }}
           run: |
-            & "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe" `
-              -source:contentPath="./publish" `
-              -dest:contentPath="simsim.yurkinsson.com",userName="$env:MSDEPLOY_USERNAME",password="$env:MSDEPLOY_PASSWORD",computerName="https://simsim.yurkinsson.com:8172/msdeploy.axd?site=simsim.yurkinsson.com",authtype="Basic" `
-              -allowUntrusted `
-              -verb:sync
+            $msdeploy = "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
+            $source = "-source:contentPath=./publish"
+            $destination = "-dest:contentPath=simsim.yurkinsson.com,userName=$env:MSDEPLOY_USERNAME,password=$env:MSDEPLOY_PASSWORD,computerName=https://simsim.yurkinsson.com:8172/msdeploy.axd?site=simsim.yurkinsson.com,authtype=Basic"
+
+            & $msdeploy `
+              $source `
+              $destination `
+              "-allowUntrusted" `
+              "-verb:sync"
