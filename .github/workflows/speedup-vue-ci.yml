@@ -3,11 +3,11 @@ name: SpeedUpVue CI
 on:
   push:
     paths:
-      - 'services/SpeedUpVue/**'
+      - 'web/SpeedUpVue/**'
       - '.github/workflows/speedup-vue-ci.yml'
   pull_request:
     paths:
-      - 'services/SpeedUpVue/**'
+      - 'web/SpeedUpVue/**'
       - '.github/workflows/speedup-vue-ci.yml'
   workflow_dispatch:
 
@@ -17,7 +17,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: services/SpeedUpVue/speedupvue
+        working-directory: web/SpeedUpVue/speedupvue
 
     steps:
       - name: Checkout repository
@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: services/SpeedUpVue/speedupvue/package-lock.json
+          cache-dependency-path: web/SpeedUpVue/speedupvue/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -40,4 +40,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: speedup-vue
-          path: services/SpeedUpVue/speedupvue/dist
+          path: web/SpeedUpVue/speedupvue/dist
