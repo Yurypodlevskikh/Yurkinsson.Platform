@@ -70,5 +70,8 @@ jobs:
           & $msdeploy `
             $source `
             $destination `
+            "-skip:Directory=App_Data" `
+            "-skip:File=web.config" `
+            "-skip:File=.user.ini" `
             "-allowUntrusted" `
             "-verb:sync"
