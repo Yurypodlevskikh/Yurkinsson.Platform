@@ -41,3 +41,34 @@ jobs:
         with:
           name: speedup-vue
           path: web/SpeedUpVue/speedupvue/dist
+  deploy:
+    if: github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: windows-latest
+
+    steps:
+      - name: Download publish artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: speedup-vue
+          path: ./publish
+
+      - name: Deploy to IIS
+        shell: pwsh
+        env:
+          MSDEPLOY_USERNAME: ${{ secrets.MSDEPLOY_USERNAME }}
+          MSDEPLOY_PASSWORD: ${{ secrets.MSDEPLOY_PASSWORD }}
+        run: |
+          $msdeploy = "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
+          $publishPath = (Resolve-Path "./publish").Path
+
+          $source = "-source:contentPath=$publishPath"
+          $destination = "-dest:contentPath=speedup.yurkinsson.com,userName=$env:MSDEPLOY_USERNAME,password=$env:MSDEPLOY_PASSWORD,computerName=https://speedup.yurkinsson.com:8172/msdeploy.axd?site=speedup.yurkinsson.com,authtype=Basic"
+
+          Write-Host "Deploying from: $publishPath"
+
+          & $msdeploy `
+            $source `
+            $destination `
+            "-allowUntrusted" `
+            "-verb:sync"
