@@ -1,0 +1,43 @@
+name: SpeedUpVue CI
+
+on:
+  push:
+    paths:
+      - 'services/SpeedUpVue/**'
+      - '.github/workflows/speedup-vue-ci.yml'
+  pull_request:
+    paths:
+      - 'services/SpeedUpVue/**'
+      - '.github/workflows/speedup-vue-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        working-directory: services/SpeedUpVue/speedupvue
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: services/SpeedUpVue/speedupvue/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: speedup-vue
+          path: services/SpeedUpVue/speedupvue/dist
