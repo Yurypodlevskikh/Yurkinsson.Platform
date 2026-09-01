@@ -36,13 +36,23 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Check API URL
+        shell: pwsh
+        run: |
+          $js = Get-ChildItem dist\assets -Filter *.js | Get-Content -Raw
+          if ($js -match "speedup-backend.yurkinsson.com") {
+            Write-Host "API URL FOUND in production build"
+          } else {
+            Write-Error "API URL NOT FOUND in production build"
+            exit 1
+          }
+
       - name: Upload publish artifact
         uses: actions/upload-artifact@v4
         with:
           name: speedup-vue
           path: web/SpeedUpVue/speedupvue/dist
   deploy:
-    if: github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: windows-latest
 
