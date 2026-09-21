@@ -2,14 +2,6 @@
     <div class="account-form">
         <div v-if="statusMessage" class="status-message">
             {{statusMessage}}
-            <!-- Resend button shown only for expired-token state -->
-            <div v-if="showResendArea" class="resend-area">
-                <ButtonSpeedUp :title="resendButtonText"
-                               :disabled="resendCooldown"
-                               @click="onResendClick"
-                               class="resend-btn">
-                </ButtonSpeedUp>
-            </div>
         </div>
 
         <!-- If pending reset exists, show ResetPasswordForm inside same card -->
@@ -25,6 +17,20 @@
                               v-model="forgotEmail"
                               :error="forgotError"
                               placeholderText="Enter your email" />
+            </div>
+        </div>
+
+        <!-- EXPIRED TOKEN: show resend-confirmation UI in place of login/register -->
+        <div v-else-if="pendingErrorCode === 'TOKEN_EXPIRED'" class="form-actions">
+            <div v-if="showResendArea" class="form-group">
+                <ButtonSpeedUp :title="resendButtonText"
+                               :disabled="resendCooldown"
+                               @click="onResendClick"
+                               class="">
+                    <template #icon>
+                        <IconRetweet />
+                    </template>
+                </ButtonSpeedUp>
             </div>
         </div>
 
@@ -105,7 +111,7 @@
             </ButtonSpeedUp>
         </template>
 
-        <template v-else>
+        <template v-else-if="!isConfirmationExpired">
             <!-- Default footer (login/register) -->
             <ButtonSpeedUp @click="toggleForm"
                            :title="isRegister ? 'Already have an account?' : 'Create an account'">
@@ -125,7 +131,7 @@
 </template>
 
 <script setup>
-    import { ref, nextTick, onMounted, computed } from 'vue';
+    import { ref, nextTick, onMounted, computed, watch } from 'vue';
     import { authenticateUser, registerUser, resendConfirmation, forgotPassword } from '@/services/authService'
     import store from '@/store/store.js'
     import InputSpeedUp from '../InputSpeedUp.vue';
@@ -136,6 +142,7 @@
     import IconLogin from '../icons/IconLogin.vue';
     import IconRotateLeft from '../icons/IconRotateLeft.vue';
     import ResetPasswordForm from './ResetPasswordForm.vue'
+    import IconRetweet from '../icons/IconRetweet.vue'
 
     const isRegister = ref(false)
     const statusMessage = ref('')
@@ -182,6 +189,9 @@
         // Show resend area if errorCode indicates expired token and we haven't already sent
         return !resendSent.value && !isSubmitting.value && (pendingErrorCode.value === 'TOKEN_EXPIRED')
     })
+    const isConfirmationExpired = computed(() =>
+        pendingErrorCode.value === 'TOKEN_EXPIRED'
+    )
 
     const resendButtonText = computed(() => {
         if (resendCooldown.value) return `Wait ${cooldownRemaining.value}s`
@@ -423,6 +433,16 @@
             }
         }
     })
+
+    watch(pending, (pendingConf) => {
+        if (!pendingConf) return
+
+        statusMessage.value = pendingConf.message || ''
+
+        if (pendingConf.success) {
+            isRegister.value = false
+        }
+    }, { immediate: true })
 </script>
 
 <style scoped>
@@ -433,19 +453,6 @@
         border-radius: 8px;
         margin-bottom: 1rem;
         text-align: center;
-    }
-
-    .resend-area {
-        margin-top: 0.5rem;
-    }
-
-    .resend-btn {
-        /* Minimal styling to visually separate the resend action */
-        background-color: var(--color-btn-back);
-        color: var(--color-btn-text);
-        border-radius: 8px;
-        padding: 0.4rem 0.8rem;
-        font-weight: 600;
     }
 
     .forgot-inline {

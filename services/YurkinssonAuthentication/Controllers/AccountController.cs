@@ -139,11 +139,11 @@ namespace YurkinssonAuthentication.Controllers
             });
         }
 
-        [HttpGet("confirm-email")]
+        [HttpPost("confirm-email")]
         [EnableRateLimiting("SingleSlidingLimiter")]
-        public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token)
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmail model)
         {
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
+            if (model == null || string.IsNullOrEmpty(model.userId) || string.IsNullOrEmpty(model.token))
             {
                 return BadRequest(new ApiResponse
                 {
@@ -156,8 +156,7 @@ namespace YurkinssonAuthentication.Controllers
 
             try
             {
-                var confirmEmail = new ConfirmEmail() { userId = userId, token = token };
-                var result = await _accountService.UserConfirmsEmail(confirmEmail);
+                var result = await _accountService.UserConfirmsEmail(model);
 
                 if (result == null)
                 {
@@ -227,7 +226,7 @@ namespace YurkinssonAuthentication.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unhandled exception while confirming email for userId={UserId}", userId);
+                _logger.LogError(ex, "Unhandled exception while confirming email for userId={UserId}", model?.userId);
 
                 return StatusCode(500, new ApiResponse
                 {
