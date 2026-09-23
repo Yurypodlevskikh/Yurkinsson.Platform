@@ -6,7 +6,7 @@
             <DeleteAccountForm />
         </div>
     </div>
-    <table class="table" v-if="isVisible">
+    <table class="table">
         <thead>
             <tr>
                 <th></th>
@@ -54,7 +54,7 @@
                 </td>
             </tr>
             <tr v-if="!isVisible">
-                <td colspan="4">
+                <td colspan="4" style="padding-top: 1rem;">
                     <div class="status-message">
                         You don't have any saved settings yet.
                     </div>
@@ -93,36 +93,68 @@
     // fetch presets on mount
     const fetchPresets = async () => {
         const cachedPresets = localStorage.getItem('userPresets')
+        const isAuthenticated = store.getters.isAuthenticated
+
         if (cachedPresets) {
-            const parsed = JSON.parse(cachedPresets)
-            if (Array.isArray(parsed)) {
-                presets.value = parsed
-                isVisible.value = parsed.length > 0
-            } else {
-                // fallback: clear bad cache and fetch from server
+            try {
+                const parsed = JSON.parse(cachedPresets)
+
+                // If cache is a valid non-empty array and user is NOT authenticated,
+                // keep using the cache (preserve existing offline/anonymous behavior).
+                if (Array.isArray(parsed) && parsed.length > 0 && !isAuthenticated) {
+                    presets.value = parsed
+                    isVisible.value = parsed.length > 0
+                    return
+                }
+
+                // Remove bad cache (non-array) so we can fetch fresh data
+                if (!Array.isArray(parsed)) {
+                    localStorage.removeItem('userPresets')
+                }
+                // If parsed is an empty array, fall through and fetch from server
+            } catch (e) {
+                // Corrupt JSON — remove and continue to server fetch
                 localStorage.removeItem('userPresets')
             }
-        } else {
-            try {
-                const data = await metronomeSettingsService.getUserPresets()
+        }
 
-                if (!Array.isArray(data) || data.length === 0) {
-                    // No server data — show empty state (do not use mock presets)
-                    presets.value = []
-                    isVisible.value = false
-                    return;
-                }
+        // Fetch from server (used when authenticated, or when cache absent/empty/corrupt)
+        try {
+            const data = await metronomeSettingsService.getUserPresets()
 
-                presets.value = data
-                if (data.length > 0) isVisible.value = true
-            } catch (error) {
-                if (import.meta.env.DEV) {
-                    console.error('Error fetching presets: ', error)
-                }
-                // On error show empty state so UI remains usable
+            // Ensure server result becomes source of truth (even if empty)
+            if (!Array.isArray(data) || data.length === 0) {
                 presets.value = []
                 isVisible.value = false
+                localStorage.setItem('userPresets', JSON.stringify([]))
+                return
             }
+
+            presets.value = data
+            isVisible.value = data.length > 0
+            // Update cache to match server data
+            localStorage.setItem('userPresets', JSON.stringify(data))
+        } catch (error) {
+            if (import.meta.env.DEV) {
+                console.error('Error fetching presets: ', error)
+            }
+
+            // On network error, fall back to any non-empty cache if present
+            const fallback = localStorage.getItem('userPresets')
+            if (fallback) {
+                try {
+                    const parsedFallback = JSON.parse(fallback)
+                    if (Array.isArray(parsedFallback) && parsedFallback.length > 0) {
+                        presets.value = parsedFallback
+                        isVisible.value = parsedFallback.length > 0
+                        return
+                    }
+                } catch { /* ignore */ }
+            }
+
+            // Otherwise show empty state
+            presets.value = []
+            isVisible.value = false
         }
     }
 
