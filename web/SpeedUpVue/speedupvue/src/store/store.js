@@ -81,6 +81,8 @@ const store = createStore({
 
         token: localStorage.getItem('authToken') || null,
         refreshToken: localStorage.getItem('refreshToken') || null,
+        // New: tracks completion of initial startup auth check
+        authInitialized: false,
         isServiceTargetAreDifference: false,
         isReverse: false,
         isReverseBack: false,
@@ -387,6 +389,10 @@ const store = createStore({
         },
         clearPendingReset(state) {
             state.pendingReset = null;
+        },
+        // New: mark that initial auth check completed
+        setAuthInitialized(state, value) {
+            state.authInitialized = !!value;
         },
     },
     actions: {

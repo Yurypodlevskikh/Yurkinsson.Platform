@@ -17,20 +17,26 @@ import ThemeSwitcher from './components/ThemeSwitcher.vue'
         mounted() {
             this.$store.commit('updateIntervalTime');
 
-            if (!this.$store.getters.isAuthenticated){
+            // If no token -> immediately mark initialization complete (unauthenticated UI)
+            if (!this.$store.getters.isAuthenticated) {
+                this.$store.commit('setAuthInitialized', true);
                 return
             }
 
+            // Token present: verify with backend. When done (success or failure) mark initialized.
             httpClient.get('api/check-auth', { isSilentCheck: true })
                 .then(response => {
                     if (import.meta.env.DEV) {
                         console.log("User is authorized")
                     }
+                    this.$store.commit('setAuthInitialized', true);
                 })
                 .catch(() => {
                     if (import.meta.env.DEV) {
                         console.log('Not authorized on startup')
                     }
+                    // Do NOT call clearAuthData() here — httpClient interceptor handles that.
+                    this.$store.commit('setAuthInitialized', true);
                 });
         },
         components: {

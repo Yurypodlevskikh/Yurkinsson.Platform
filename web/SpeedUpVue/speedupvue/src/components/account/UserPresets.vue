@@ -53,7 +53,7 @@
                     </SpeedUpButton>
                 </td>
             </tr>
-            <tr v-if="!isVisible">
+            <tr v-if="isVisible === false">
                 <td colspan="4" style="padding-top: 1rem;">
                     <div class="status-message">
                         You don't have any saved settings yet.
@@ -87,7 +87,7 @@
     const { showStatusMessage } = useStatusMessage()
     const presets = ref([])
     const activeDescription = ref(null)
-    const isVisible = ref(false)
+    const isVisible = ref(null)
     const deleteAccountOpen = ref(false)
 
     // fetch presets on mount

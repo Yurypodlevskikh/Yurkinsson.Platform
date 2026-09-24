@@ -25,7 +25,7 @@
                             <BroomIcon />
                         </template>
                     </SpeedUpButton>
-                    <SpeedUpButton v-show="isAuthenticated" @click="handleSaveAs" title="Save As"
+                    <SpeedUpButton v-show="isAuthVisible" @click="handleSaveAs" title="Save As"
                                    :disabled="!isSettingsChanged">
                         <template #icon>
                             <IconSaveAs />
@@ -116,6 +116,8 @@
     const isSettingsChanged = computed(() => store.getters.isSettingsChanged)
     const isAuthenticated = computed(() => !!store.state.token)
     const isSavedSettingsId = computed(() => !!store.state.savedSettingsId)
+    // New: only allow authenticated UI after initial check
+    const isAuthVisible = computed(() => store.state.authInitialized && store.getters.isAuthenticated)
 
     // Methods
     function setDefaultSettings() {

@@ -4,10 +4,10 @@
             <button type="button" @click="handleLogoClick()" title="Themes" class="bpm-btn logo-btn">
                 <LogoIcon />
             </button>
-            <SpeedUpButton @click="isAuthenticated ? openPresetsTab() : openAuthTab()"
-                           :title="isAuthenticated ? 'Account' : 'Login'">
+            <SpeedUpButton @click="isAuthVisible ? openPresetsTab() : openAuthTab()"
+                           :title="isAuthVisible ? 'Account' : 'Login'">
                 <template #icon>
-                    <component :is="isAuthenticated ? IconCircleUser : IconLogin" />
+                    <component :is="isAuthVisible ? IconCircleUser : IconLogin" />
                 </template>
             </SpeedUpButton>
             <SpeedUpButton @click="openSettingsTab" title="Settings">
@@ -41,6 +41,8 @@
     // Get a state from the store
     const isOpenSettingsPanel = computed(() => store.getters.getSettingsPanel)
     const isAuthenticated = computed(() => store.getters.isAuthenticated)
+    // New: only show authenticated UI after startup check completed
+    const isAuthVisible = computed(() => store.state.authInitialized && store.getters.isAuthenticated)
 
     function openPresetsTab() {
         store.commit('openSettingsPanelWithTab', 'presets')
