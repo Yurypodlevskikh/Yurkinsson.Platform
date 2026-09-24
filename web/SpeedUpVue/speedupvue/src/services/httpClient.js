@@ -62,7 +62,8 @@ httpClient.interceptors.response.use(
                     refreshToken: refreshToken
                 })
 
-                if (refreshResponse.data.isSuccess) {
+                // MiniAPI returns { jwtToken, refreshToken, refreshTokenExpiry } on success.
+                if (refreshResponse.data && refreshResponse.data.jwtToken && refreshResponse.data.refreshToken) {
                     const newToken = refreshResponse.data.jwtToken
                     const newRefreshToken = refreshResponse.data.refreshToken
 
